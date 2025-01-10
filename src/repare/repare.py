@@ -11,31 +11,33 @@ class PartitionDagModel(object):
 
     def fit(self, order, adj) -> object:
         # always use lexicograph order for node partitions
-        self.dag.add_node(sorted(order))  # trivial coarsening
+        self.dag.add_node(tuple(sorted(order)))  # trivial coarsening
 
-        recurse = len(order)
+        def _is_adj(pa, ch):
+            for el_pa in pa:
+                for el_ch in ch:
+                    if el_ch in adj[el_pa]:
+                        return True
+            return False
+
+        recurse = len(order) - 1
         while recurse:
             recurse -= 1
 
-            to_refine, u, v = self.refine(order)
+            to_refine, u, v = self._refine(order)
 
             self.dag.add_node(u)
             self.dag.add_node(v)
             for pa in self.dag.predecessors(to_refine):
-                for el in pa:
-                    for el_u in u:
-                        if el_u in adj[el]:
-                            self.dag.add_edge(pa, u)
-                            break
-                    for el_v in v:
-                        if el_v in adj[el]:
-                            self.dag.add_edge(pa, v)
-                            break
-            for el_u in u:
-                for el_v in v:
-                    if el_v in adj[u]:
-                        self.dag.add_edge(u, v)
-                        break
+                for ch in (u, v):
+                    if _is_adj(pa, ch):
+                        self.dag.add_edge(pa, ch)
+            for pa in (u, v):
+                for ch in self.dag.successors(to_refine):
+                    if _is_adj(pa, ch):
+                        self.dag.add_edge(pa, ch)
+            if _is_adj(u, v):
+                self.dag.add_edge(u, v)
             self.dag.remove_node(to_refine)
 
         # recursively select a partition to split
@@ -43,9 +45,9 @@ class PartitionDagModel(object):
         #     add edges according to adj
         return self
 
-    def refine(self, order):
+    def _refine(self, order):
         refinable_nodes = [node for node in self.dag.nodes if len(node) > 1]
-        to_refine = self.rng.choice(refinable_nodes)
+        to_refine = tuple(self.rng.choice(refinable_nodes))
         u_len = self.rng.choice(range(1, len(to_refine)))  # rest go to v
         u = tuple(
             sorted(
