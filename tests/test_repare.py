@@ -7,3 +7,8 @@ def test_fit():
 
     model = PartitionDagModel()
     model.fit(true_order, true_adj)
+
+    assert len(model.dag.edges) == 3
+    for u in true_adj.keys():
+        for v in true_adj[u]:
+            assert model.dag.has_edge((u,), (v,))
