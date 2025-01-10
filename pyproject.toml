@@ -1,0 +1,19 @@
+[project]
+name = "repare"
+version = "0.1.0"
+description = "Recursive partition refinement for causal discovery."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "networkx>=3.4.2",
+    "sempler>=0.2.13",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.4",
+]
