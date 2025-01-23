@@ -1,6 +1,6 @@
 import networkx as nx
 import numpy as np
-
+from scipy.stats import kstest
 
 class PartitionDagModel(object):
     """A probabilistic graphical model in the form of a directed acyclic graph over parts of a partiton."""
@@ -56,3 +56,7 @@ class PartitionDagModel(object):
         u = tuple(sorted(u))
         v = tuple((el for el in to_refine if el not in u))
         return to_refine, u, v
+
+
+    def fit_ks(self,data_dict):
+        return

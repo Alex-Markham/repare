@@ -2,7 +2,9 @@ import networkx as nx
 import numpy as np
 from numpy.random import default_rng as rng
 from repare.repare import PartitionDagModel
+from scipy.stats import kstest
 from sempler import LGANM
+from sempler.generators import dag_avg_deg, intervention_targets
 
 
 def test_fit_basic():
@@ -29,4 +31,34 @@ def test_fit_extensive():
     model = PartitionDagModel()
     model.fit(true_order, true_adj)
 
-    return
+
+def test_intervention():
+    seed = 0
+    num_nodes = 20
+    num_intervs = 5
+    density = 0.3
+    deg = density * (num_nodes - 1)
+
+    weights = dag_avg_deg(
+        num_nodes, deg, w_min=0.5, w_max=2, return_ordering=False, random_state=seed
+    )
+
+    edge_idcs = np.flatnonzero(weights)
+    to_neg = edge_idcs[rng(seed).choice((True, False), len(edge_idcs))]
+    weights[np.unravel_index(to_neg, (num_nodes, num_nodes))] *= -1
+
+    model = LGANM(weights, means=(-2, 2), variances=(0.5, 2), random_state=seed)
+    targets = intervention_targets(num_nodes, num_intervs, 1, random_state=seed)
+
+    obs_dataset = model.sample(1000)
+    interv_datasets = {
+        idx: model.sample(1000, shift_interventions={target[0]: (2, 1)})
+        for idx, target in enumerate(targets)
+    }
+
+    alpha = 0.05
+
+    ks_results = {
+        idx: kstest(obs_dataset, interv_dataset).pvalue < alpha
+        for idx, interv_dataset in interv_datasets.items()
+    }  # <alpha means reject the null, so 0 -> 1 (in PO, not in causal dag)
