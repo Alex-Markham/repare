@@ -1,3 +1,5 @@
+from collections import deque
+
 import networkx as nx
 import numpy as np
 from scipy.stats import kstest
@@ -14,19 +16,16 @@ class PartitionDagModelOracle(object):
         self.order = order
         self.adj = adj
 
-        # always use lexicograph order for node partitions
-        self.dag.add_node(tuple(sorted(order)))  # trivial coarsening
-
-        recurse = len(order) - 1
-        while recurse:
-            recurse -= 1
+        # always use lexicographical order for node partitions
+        init_partition = [tuple(sorted(order))]  # trivial coarsening
+        self.dag.add_nodes_from(init_partition)
+        self.refinable = deque(init_partition)
+        while len(self.refinable) > 0:
             self._recurse()
         return self
 
     def _refine(self):
-        refinable_nodes = [node for node in self.dag.nodes if len(node) > 1]
-        to_refine_idx = self.rng.choice(len(refinable_nodes))
-        to_refine = tuple(refinable_nodes[to_refine_idx])
+        to_refine = self.refinable.popleft()
         u_len = self.rng.choice(range(1, len(to_refine)))  # rest go to v
         u = []
         for el in self.order:
@@ -47,7 +46,10 @@ class PartitionDagModelOracle(object):
 
     def _recurse(self):
         to_refine, u, v = self._refine()
-
+        if len(u) > 1:
+            self.refinable.append(u)
+        if len(v) > 1:
+            self.refinable.append(v)
         self.dag.add_node(u)
         self.dag.add_node(v)
 

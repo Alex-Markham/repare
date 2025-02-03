@@ -24,6 +24,7 @@ def test_fit_oracle_extensive():
     digraph = nx.binomial_graph(100, 0.5, directed=True)
     true_order = list(rng(0).permutation(range(100)))
     s = np.argsort(true_order)
+
     to_rm = [(u, v) for u, v in digraph.edges if s[u] > s[v]]
     digraph.remove_edges_from(to_rm)
     true_adj = {k: [kk for kk in v.keys()] for k, v in digraph.adj.items()}
@@ -62,3 +63,5 @@ def test_intervention():
         idx: kstest(obs_dataset, interv_dataset).pvalue < alpha
         for idx, interv_dataset in interv_datasets.items()
     }  # <alpha means reject the null, so 0 -> 1 (in PO, not in causal dag)
+
+    ivn_biadj = {k: np.flatnonzero(v) for k, v in ks_results.items()}
