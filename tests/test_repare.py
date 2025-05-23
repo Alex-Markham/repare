@@ -208,6 +208,12 @@ def initial_eval_results():
             ]
     results_df.to_csv("initial_results.csv")
 
+
+def plot():
+    results_df = pd.read_csv("initial_results.csv")
+
+    sns.set_context("paper", font_scale=1.5)
+
     fplot = sns.catplot(
         data=results_df,
         x="density",
@@ -215,9 +221,11 @@ def initial_eval_results():
         hue="alg",
         kind="box",
         row="num_nodes",
-        legend=True,
+        legend=False,
         palette="Set2",
     )
+    fplot.set_titles("")
+    fplot.set_ylabels("F-score ↑")
     fplot.tight_layout()
     fplot.figure.savefig("fscores.pdf")
 
@@ -228,11 +236,16 @@ def initial_eval_results():
         hue="alg",
         kind="box",
         row="num_nodes",
-        legend=True,
+        legend=False,
         palette="Set2",
     )
+    ariplot.set_titles("")
+    ariplot.set_ylabels("adjusted Rand index ↑")
     ariplot.tight_layout()
     ariplot.figure.savefig("ari.pdf")
+
+
+# plot()
 
 
 def sachs(alpha=0.05, mu=0.1, obs_idx=0):
