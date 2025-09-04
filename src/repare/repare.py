@@ -69,10 +69,10 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
     def __init__(self, rng=np.random.default_rng(0)) -> None:
         super().__init__(rng)
 
-    def fit(self, data_dict, alpha=0.05, mu=0.1, disc=False):
+    def fit(self, data_dict, alpha=0.05, mu=0.1, normalize=True):
         # pool and standardize data; set mu for self._is_adj()
         pooled_data = np.vstack(list(data_dict.values()))
-        if not disc:
+        if normalize:
             pooled_data -= pooled_data.mean(axis=0)
             pooled_data /= pooled_data.std(axis=0)
         self.pooled_data = pooled_data
