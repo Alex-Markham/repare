@@ -1,8 +1,6 @@
 include: "rules/synth.smk"
 include: "rules/sachs.smk"
-
-
-# include: "rules/semisynth.smk"
+include: "rules/synthsachs.smk"
 
 
 rule all:
@@ -10,3 +8,4 @@ rule all:
         "results/fscores.pdf",
         "results/ari.pdf",
         "results/sachs.tex",
+        "results/synthsachs_plot.pdf",

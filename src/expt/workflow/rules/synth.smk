@@ -19,6 +19,7 @@ rule model_fitting_synth:
     params:
         alpha=0.01,  # 0.01
         mu=0.1,  # 0.1
+        normalize=True,
     script:
         "../scripts/fit_synth.py"
 

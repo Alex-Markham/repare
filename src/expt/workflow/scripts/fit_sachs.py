@@ -10,6 +10,7 @@ df = pd.read_pickle(snakemake.input[0])
 obs_idx = int(snakemake.wildcards.obs_idx)
 alpha = float(snakemake.params.alpha)
 mu = float(snakemake.params.mu)
+normalize = float(snakemake.params.normalize)
 
 # Prepare data_dict using obs_idx as reference
 ivn_idcs = df["INT"].unique()
@@ -20,7 +21,7 @@ data_dict["obs"] = data_dict.pop(str(obs_idx))
 
 # fit model
 model = PartitionDagModelIvn()
-model.fit(data_dict, alpha, mu, disc=True)
+model.fit(data_dict, alpha, mu, normalize)
 
 # plot learned DAG
 fig = plt.figure()

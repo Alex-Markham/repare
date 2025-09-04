@@ -19,6 +19,7 @@ rule fit_sachs:
     params:
         alpha=0.05,
         mu=0.1,
+        normalize=False,
     script:
         "../scripts/fit_sachs.py"
 
