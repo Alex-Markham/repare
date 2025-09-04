@@ -6,7 +6,19 @@ in
   # https://devenv.sh/packages/
   packages = [
     pkgs.git
+
+    # needed for snakemake
     pkgs.coinmp
+
+    # needed for sempler DRFNet
+    pkgs.R
+    pkgs.rPackages.drf
+    pkgs.zlib
+    pkgs.bzip2
+    pkgs.xz
+    pkgs.zstd
+    pkgs.libdeflate
+    pkgs.icu
   ];
 
   # https://devenv.sh/languages/
