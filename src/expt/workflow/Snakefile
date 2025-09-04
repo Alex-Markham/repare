@@ -1,0 +1,12 @@
+include: "rules/synth.smk"
+include: "rules/sachs.smk"
+
+
+# include: "rules/semisynth.smk"
+
+
+rule all:
+    input:
+        "results/fscores.pdf",
+        "results/ari.pdf",
+        "results/sachs.tex",
