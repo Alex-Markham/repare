@@ -3,15 +3,12 @@ name = "repare"
 version = "0.1.0"
 description = "Recursive partition refinement for causal discovery."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.13"
 dependencies = [
+    "dcor>=0.6",
     "networkx>=3.4.2",
-    "numba>=0.61.0",
     "scikit-learn>=1.6.1",
     "scipy>=1.15.1",
-    "seaborn>=0.13.2",
-    "sempler>=0.2.13",
-    "tigramite>=5.2.7.0",
 ]
 
 [build-system]
@@ -24,4 +21,8 @@ packages = ["src/repare"]
 [dependency-groups]
 dev = [
     "pytest>=8.3.4",
+    "seaborn>=0.13.2",
+    "sempler>=0.2.14",
+    "snakefmt>=0.11.1",
+    "snakemake>=9.10.1",
 ]

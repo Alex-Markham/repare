@@ -4,12 +4,15 @@ let
 in
 {
   # https://devenv.sh/packages/
-  packages = [ pkgs.git ];
+  packages = [
+    pkgs.git
+    pkgs.coinmp
+  ];
 
   # https://devenv.sh/languages/
   languages.python = {
     enable = true;
-    version = "3.12";
+    version = "3.13";
     venv.enable = true;
     uv = {
       enable = true;
