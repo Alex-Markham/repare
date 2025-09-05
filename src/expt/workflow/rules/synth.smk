@@ -17,9 +17,9 @@ rule model_fitting_synth:
     output:
         base_path + "model.pkl",
     params:
-        alpha=0.01,  # 0.01
-        mu=0.1,  # 0.1
-        normalize=True,
+        alpha=0.05,
+        beta=0.05,
+        assume="gaussian",
     script:
         "../scripts/fit_synth.py"
 

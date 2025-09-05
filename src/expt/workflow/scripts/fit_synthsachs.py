@@ -12,8 +12,8 @@ def fit_synthsachs():
     output_dag = snakemake.output.dag
     reference = snakemake.params.reference
     alpha = float(snakemake.params.alpha)
-    mu = float(snakemake.params.mu)
-    normalize = bool(snakemake.params.normalize)
+    beta = float(snakemake.params.beta)
+    assume = snakemake.params.assume
 
     # Load DataFrame with 'INT' column marking intervention indices
     df = pd.read_pickle(input_file)
@@ -29,7 +29,7 @@ def fit_synthsachs():
 
     # Fit the PartitionDagModelIvn
     model = PartitionDagModelIvn()
-    model.fit(data_dict, alpha=alpha, mu=mu, normalize=normalize)
+    model.fit(data_dict, alpha, beta, assume)
 
     # Plot learned DAG
     fig = plt.figure()

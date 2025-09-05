@@ -9,8 +9,8 @@ from repare.repare import PartitionDagModelIvn
 df = pd.read_pickle(snakemake.input[0])
 obs_idx = int(snakemake.wildcards.obs_idx)
 alpha = float(snakemake.params.alpha)
-mu = float(snakemake.params.mu)
-normalize = float(snakemake.params.normalize)
+beta = float(snakemake.params.beta)
+assume = snakemake.params.assume
 
 # Prepare data_dict using obs_idx as reference
 ivn_idcs = df["INT"].unique()
@@ -21,7 +21,7 @@ data_dict["obs"] = data_dict.pop(str(obs_idx))
 
 # fit model
 model = PartitionDagModelIvn()
-model.fit(data_dict, alpha, mu, normalize)
+model.fit(data_dict, alpha, beta, assume)
 
 # plot learned DAG
 fig = plt.figure()

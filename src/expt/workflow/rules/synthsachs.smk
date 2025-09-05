@@ -29,8 +29,8 @@ rule fit_synthsachs:
     params:
         reference="pip3",
         alpha=0.05,
-        mu=0.1,
-        normalize=False,
+        beta=0.1,
+        assume=None,
     script:
         "../scripts/fit_synthsachs.py"
 
