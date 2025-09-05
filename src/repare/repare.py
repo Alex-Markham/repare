@@ -3,7 +3,9 @@ from collections import deque
 import dcor
 import networkx as nx
 import numpy as np
-from scipy.stats import kstest
+from scipy.stats import chi2, chi2_contingency, kstest
+
+from .utils import SimpleCanCorr
 
 
 class PartitionDagModelOracle(object):
@@ -50,6 +52,8 @@ class PartitionDagModelOracle(object):
 
     def _recurse(self):
         to_refine, u, v = self._refine()
+        if not u or not v:
+            return
         self.dag.add_node(tuple(u))
         self.dag.add_node(tuple(v))
         for pa in self.dag.predecessors(tuple(to_refine)):
@@ -69,23 +73,65 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
     def __init__(self, rng=np.random.default_rng(0)) -> None:
         super().__init__(rng)
 
-    def fit(self, data_dict, alpha=0.05, mu=0.1, normalize=True):
-        # pool and standardize data; set mu for self._is_adj()
-        pooled_data = np.vstack(list(data_dict.values()))
-        if normalize:
-            pooled_data -= pooled_data.mean(axis=0)
-            pooled_data /= pooled_data.std(axis=0)
-        self.pooled_data = pooled_data
-        self.mu = mu
-        obs = data_dict.pop("obs", None)
-        if obs is None:
-            raise ValueError("Observed data 'obs' key not found in data_dict")
+    def fit(self, data_dict, alpha=0.05, beta=0.05, assume=None):
+        self.assume = assume
+        self.data_dict = data_dict
+        self.beta = beta
+        obs = data_dict.pop("obs")
 
-        ks_results = {
-            idx: kstest(obs, post_ivn).pvalue < alpha
-            for idx, post_ivn in data_dict.items()
-        }
-        self.partition = _get_totally_ordered_partition(ks_results)
+        if self.assume is None:
+
+            def p_val(post_ivn):
+                res = kstest(obs, post_ivn)
+                return res.pvalue
+
+        # Gaussian LRT: vectorized over columns of post_ivn
+        if self.assume == "gaussian":
+
+            def p_val(post_ivn):
+                num_feats = obs.shape[1]
+                pvals = np.empty(num_feats)
+                for j in range(num_feats):
+                    x = obs[:, j]
+                    y = post_ivn[:, j]
+
+                    def ll(data):
+                        m = data.size
+                        mu = data.mean()
+                        s2 = np.mean((data - mu) ** 2)
+                        return -0.5 * m * (np.log(2 * np.pi * s2) + 1)
+
+                    ll_sep = ll(x) + ll(y)
+                    ll_null = ll(np.concatenate([x, y]))
+                    LR = 2.0 * (ll_sep - ll_null)
+                    pvals[j] = chi2.sf(LR, df=2)
+                return pvals
+
+        # Discrete chi2: vectorized over columns of post_ivn
+        if self.assume == "discrete":
+
+            def p_val(post_ivn):
+                num_feats = obs.shape[1]
+                pvals = np.empty(num_feats)
+                for j in range(num_feats):
+                    x = obs[:, j]
+                    y = post_ivn[:, j]
+                    vals = np.concatenate([x, y])
+                    uniq, inv = np.unique(vals, return_inverse=True)
+                    inv_x = inv[: x.size]
+                    inv_y = inv[x.size :]
+                    V = uniq.size
+                    table = np.zeros((2, V), dtype=int)
+                    for idx in inv_x:
+                        table[0, idx] += 1
+                    for idx in inv_y:
+                        table[1, idx] += 1
+                    _, pval, _, _ = chi2_contingency(table, correction=False)
+                    pvals[j] = float(pval)
+                return pvals
+
+        results = {idx: p_val(post_ivn) < alpha for idx, post_ivn in data_dict.items()}
+        self.partition = _get_totally_ordered_partition(results)
         init_partition = [set(range(obs.shape[1]))]  # trivial coarsening
         self.dag.add_node(tuple(range(obs.shape[1])))
         self.refinable = deque(init_partition)
@@ -102,20 +148,53 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         return to_refine, u, v
 
     def _is_adj(self, pa, ch):
-        # Compute distance covariance between sets pa and ch using dcor
+        # Compute dependence between sets pa and ch
         xy_indices = list(pa.union(ch))
-        xy_data = self.pooled_data[:, xy_indices]  # shape (samples x variables)
+
         # Separate data columns for pa and ch
         pa_mask = [idx in pa for idx in xy_indices]
         ch_mask = [idx in ch for idx in xy_indices]
-        x = xy_data[:, pa_mask]
-        y = xy_data[:, ch_mask]
-        # Compute the empirical distance covariance test statistic
-        # test_result = dcor.independence.distance_covariance_test(
-        #     x, y, num_resamples=100, random_state=0
-        # )
-        test_result = dcor.independence.distance_correlation_t_test(x, y)
-        return test_result.pvalue > self.mu
+
+        if self.assume is None:
+
+            def p_val(x, y):
+                test_result = dcor.independence.distance_correlation_t_test(x, y)
+                return test_result.pvalue
+
+        if self.assume == "gaussian":
+
+            def p_val(x, y):
+                # bug in statsmodels.multivariate.cancorr, so can't use the following
+                # cc = CanCorr(y, x)
+                # test_res = cc.corr_test()
+                # return test_res.stats_mv.loc["Wilks' lambda", "Pr > F"]
+                cca = SimpleCanCorr(x, y)
+                result = cca.wilks_lambda_test()
+                return result.loc[0, "Pr > F"]
+
+        if self.assume == "discrete":
+            """For paired samples X (n×p) and Y (n×q) where both are
+            discrete (categorical), give a concise Python function
+            that tests independence parametrically: encode
+            multivariate categories as joint labels, build the
+            contingency table, run scipy.stats.chi2_contingency
+            (Pearson chi-square) to return the asymptotic p-value, and
+            handle sparse tables by warning when expected counts < 5
+            (or fall back to Fisher/exact/permutation). Include
+            imports and a minimal example ."""
+            p_val = 1
+        p_vals = []
+        for env in self.data_dict.values():
+            xy_data = env[:, xy_indices]  # shape (samples x variables)
+            x = xy_data[:, pa_mask]
+            y = xy_data[:, ch_mask]
+            if x.ndim == 1:
+                x = x[:, None]
+            if y.ndim == 1:
+                y = y[:, None]
+            p_vals.append(p_val(x, y))
+
+        return max(p_vals) <= self.beta
 
 
 def _get_totally_ordered_partition(ivn_biadj):
