@@ -19,8 +19,10 @@ weights[np.unravel_index(to_neg, (num_nodes, num_nodes))] *= -1
 model = LGANM(weights, means=(-2, 2), variances=(0.5, 2), random_state=seed)
 targets = intervention_targets(num_nodes, num_intervs, 1, random_state=seed)
 obs_dataset = model.sample(samp_size)
+
+# gene knockouts
 interv_datasets = {
-    str(idx): model.sample(samp_size, shift_interventions={target[0]: (2, 1)})
+    str(idx): model.sample(samp_size, do_interventions={target[0]: (100, 0.1)})
     for idx, target in enumerate(targets)
 }
 data_dict = {"obs": obs_dataset} | interv_datasets

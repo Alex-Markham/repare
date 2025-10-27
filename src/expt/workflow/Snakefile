@@ -7,5 +7,5 @@ rule all:
     input:
         "results/fscores.pdf",
         "results/ari.pdf",
-        "results/sachs.tex",
-        "results/synthsachs_plot.pdf",
+        # "results/sachs.tex",
+        # "results/synthsachs_plot.pdf",

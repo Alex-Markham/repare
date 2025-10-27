@@ -218,3 +218,16 @@ def _get_totally_ordered_partition(ivn_biadj):
                 new_partition.append(part)
         partition = new_partition
     return deque((set(part) for part in partition))
+
+
+# from collections import OrderedDict, deque
+
+# def get_totally_ordered_partition(ivn_biadj):
+#     # ivn_biadj: dict -> iterable of bool arrays (same length)
+#     n = len(next(iter(ivn_biadj.values())))
+#     pattern_to_nodes = OrderedDict()
+#     for node in range(n):
+#         # build pattern as tuple of booleans in a stable order of keys
+#         pattern = tuple(ivn_biadj[k][node] for k in ivn_biadj)
+#         pattern_to_nodes.setdefault(pattern, []).append(node)
+#     return deque(set(nodes) for nodes in pattern_to_nodes.values())
