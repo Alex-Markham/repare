@@ -3,7 +3,7 @@ from collections import deque
 import dcor
 import networkx as nx
 import numpy as np
-from scipy.stats import chi2, chi2_contingency, kstest
+from scipy.stats import chi2, chi2_contingency, ks_2samp
 
 from .utils import SimpleCanCorr
 
@@ -113,8 +113,25 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         if self.assume is None:
 
             def p_val(post_ivn):
-                res = kstest(obs_data, post_ivn)
-                return res.pvalue
+                if obs_data.ndim == 1:
+                    baseline = obs_data[:, None]
+                else:
+                    baseline = obs_data
+                if post_ivn.ndim == 1:
+                    comparison = post_ivn[:, None]
+                else:
+                    comparison = post_ivn
+                num_feats = baseline.shape[1]
+                pvals = np.empty(num_feats)
+                for j in range(num_feats):
+                    stat = ks_2samp(
+                        baseline[:, j],
+                        comparison[:, j],
+                        alternative="two-sided",
+                        mode="auto",
+                    )
+                    pvals[j] = stat.pvalue
+                return pvals
 
         # Gaussian LRT: vectorized over columns of post_ivn
         if self.assume == "gaussian":
