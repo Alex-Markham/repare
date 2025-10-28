@@ -3,7 +3,7 @@ from collections import deque
 import dcor
 import networkx as nx
 import numpy as np
-from scipy.stats import chi2, chi2_contingency, f, kstest
+from scipy.stats import chi2, chi2_contingency, ks_2samp
 
 from .utils import SimpleCanCorr
 
@@ -129,28 +129,24 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         if self.assume is None:
 
             def p_val(post_ivn):
-                baseline = np.asarray(obs_data)
-                comparison = np.asarray(post_ivn)
-                if baseline.ndim == 1:
-                    baseline = baseline[:, None]
-                if comparison.ndim == 1:
-                    comparison = comparison[:, None]
+                if obs_data.ndim == 1:
+                    baseline = obs_data[:, None]
+                else:
+                    baseline = obs_data
+                if post_ivn.ndim == 1:
+                    comparison = post_ivn[:, None]
+                else:
+                    comparison = post_ivn
                 num_feats = baseline.shape[1]
                 pvals = np.empty(num_feats)
-                test = self.refine_test
                 for j in range(num_feats):
-                    x = baseline[:, j]
-                    y = comparison[:, j]
-                    if test == "ks":
-                        res = kstest(x, y)
-                        pvals[j] = res.pvalue
-                    elif test == "energy":
-                        result = dcor.homogeneity.energy_test(
-                            x[:, None], y[:, None], num_resamples=199
-                        )
-                        pvals[j] = result.pvalue
-                    else:
-                        raise ValueError(f"Unknown refine_test '{self.refine_test}'")
+                    stat = ks_2samp(
+                        baseline[:, j],
+                        comparison[:, j],
+                        alternative="two-sided",
+                        mode="auto",
+                    )
+                    pvals[j] = stat.pvalue
                 return pvals
 
         # Gaussian LRT: vectorized over columns of post_ivn
