@@ -108,21 +108,22 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         self.obs = obs_array
         self.data_dict = processed_envs
         self.env_targets = env_targets
+        obs_data = self.obs
 
         if self.assume is None:
 
             def p_val(post_ivn):
-                res = kstest(obs, post_ivn)
+                res = kstest(obs_data, post_ivn)
                 return res.pvalue
 
         # Gaussian LRT: vectorized over columns of post_ivn
         if self.assume == "gaussian":
 
             def p_val(post_ivn):
-                num_feats = obs.shape[1]
+                num_feats = obs_data.shape[1]
                 pvals = np.empty(num_feats)
                 for j in range(num_feats):
-                    x = obs[:, j]
+                    x = obs_data[:, j]
                     y = post_ivn[:, j]
 
                     def ll(data):
@@ -141,7 +142,7 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         if self.assume == "discrete":
 
             def p_val(post_ivn):
-                num_feats = obs.shape[1]
+                num_feats = obs_data.shape[1]
                 pvals = np.empty(num_feats)
                 for j in range(num_feats):
                     x = obs[:, j]
