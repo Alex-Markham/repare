@@ -75,9 +75,39 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
 
     def fit(self, data_dict, alpha=0.05, beta=0.05, assume=None):
         self.assume = assume
-        self.data_dict = data_dict
+        data_dict = data_dict.copy()
         self.beta = beta
         obs = data_dict.pop("obs")
+
+        def _split_env(env):
+            if isinstance(env, tuple):
+                if len(env) != 2:
+                    raise ValueError("Environment tuple must be (data, targets)")
+                data, targets = env
+            elif isinstance(env, dict):
+                if "data" not in env:
+                    raise ValueError("Environment dict must contain a 'data' key")
+                data = env["data"]
+                targets = env.get("targets", ())
+            else:
+                data = env
+                targets = ()
+            return np.asarray(data), set(targets)
+
+        obs_array, obs_targets = _split_env(obs)
+        if obs_targets:
+            raise ValueError("Observational dataset cannot have intervention targets")
+
+        processed_envs = {}
+        env_targets = {}
+        for key, env in data_dict.items():
+            env_array, targets = _split_env(env)
+            processed_envs[key] = env_array
+            env_targets[key] = targets
+
+        self.obs = obs_array
+        self.data_dict = processed_envs
+        self.env_targets = env_targets
 
         if self.assume is None:
 
@@ -130,10 +160,10 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                     pvals[j] = float(pval)
                 return pvals
 
-        results = {idx: p_val(post_ivn) < alpha for idx, post_ivn in data_dict.items()}
+        results = {idx: p_val(post_ivn) < alpha for idx, post_ivn in self.data_dict.items()}
         self.partition = _get_totally_ordered_partition(results)
-        init_partition = [set(range(obs.shape[1]))]  # trivial coarsening
-        self.dag.add_node(tuple(range(obs.shape[1])))
+        init_partition = [set(range(self.obs.shape[1]))]  # trivial coarsening
+        self.dag.add_node(tuple(range(self.obs.shape[1])))
         self.refinable = deque(init_partition)
         while len(self.refinable) > 0:
             self._recurse()
@@ -148,13 +178,6 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         return to_refine, u, v
 
     def _is_adj(self, pa, ch):
-        # Compute dependence between sets pa and ch
-        xy_indices = list(pa.union(ch))
-
-        # Separate data columns for pa and ch
-        pa_mask = [idx in pa for idx in xy_indices]
-        ch_mask = [idx in ch for idx in xy_indices]
-
         if self.assume is None:
 
             def p_val(x, y):
@@ -183,18 +206,30 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             (or fall back to Fisher/exact/permutation). Include
             imports and a minimal example ."""
             p_val = 1
-        p_vals = []
-        for env in self.data_dict.values():
-            xy_data = env[:, xy_indices]  # shape (samples x variables)
-            x = xy_data[:, pa_mask]
-            y = xy_data[:, ch_mask]
+        pa_indices = sorted(pa)
+        ch_indices = sorted(ch)
+
+        datasets = [(self.obs, set())] + [
+            (env, self.env_targets.get(key, set()))
+            for key, env in self.data_dict.items()
+        ]
+
+        p_values = []
+        for env, targets in datasets:
+            if targets.intersection(pa) or targets.intersection(ch):
+                continue
+            x = env[:, pa_indices]
+            y = env[:, ch_indices]
             if x.ndim == 1:
                 x = x[:, None]
             if y.ndim == 1:
                 y = y[:, None]
-            p_vals.append(p_val(x, y))
+            p_values.append(p_val(x, y))
 
-        return max(p_vals) <= self.beta
+        if not p_values:
+            return False
+
+        return max(p_values) <= self.beta
 
 
 def _get_totally_ordered_partition(ivn_biadj):
