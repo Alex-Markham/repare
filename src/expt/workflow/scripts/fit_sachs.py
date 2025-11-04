@@ -14,13 +14,10 @@ assume = snakemake.params.assume
 
 # Prepare data_dict using obs_idx as reference
 ivn_idcs = df["INT"].unique()
-data_dict = {}
-for idx in ivn_idcs:
-    subset = df[df["INT"] == idx].drop("INT", axis=1).to_numpy()
-    if idx == obs_idx:
-        data_dict["obs"] = (subset, set())
-    else:
-        data_dict[str(idx)] = (subset, {int(idx)})
+data_dict = {
+    str(idx): df[df["INT"] == idx].drop("INT", axis=1).copy() for idx in ivn_idcs
+}
+data_dict["obs"] = data_dict.pop(str(obs_idx))
 
 # fit model
 model = PartitionDagModelIvn()

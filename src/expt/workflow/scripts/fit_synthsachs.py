@@ -20,13 +20,12 @@ def fit_synthsachs():
 
     # Build dictionary of data arrays keyed by intervention index as string
     ivn_idcs = df["INT"].unique()
-    data_dict = {}
-    for ivn in ivn_idcs:
-        array = df[df["INT"] == ivn].drop("INT", axis=1).to_numpy()
-        if ivn == reference:
-            data_dict["obs"] = (array, set())
-        else:
-            data_dict[str(ivn)] = (array, {int(ivn)})
+    data_dict = {
+        ivn: df[df["INT"] == ivn].drop("INT", axis=1).copy() for ivn in ivn_idcs
+    }
+
+    # Rename the observational intervention to key 'obs'
+    data_dict["obs"] = data_dict.pop(reference)
 
     # Fit the PartitionDagModelIvn
     model = PartitionDagModelIvn()
