@@ -17,27 +17,13 @@ edge_idcs = np.flatnonzero(weights)
 to_neg = edge_idcs[default_rng(seed).choice([True, False], len(edge_idcs))]
 weights[np.unravel_index(to_neg, (num_nodes, num_nodes))] *= -1
 model = LGANM(weights, means=(-2, 2), variances=(0.5, 2), random_state=seed)
-targets = intervention_targets(
-    num_nodes,
-    num_intervs,
-    1,
-    replace=False,
-    random_state=seed,
-)
+targets = intervention_targets(num_nodes, num_intervs, 1, random_state=seed)
 obs_dataset = model.sample(samp_size)
 
-intervention_type = getattr(snakemake.params, "intervention_type", "hard").lower()
-
-def sample_intervention(target):
-    node = target[0]
-    if intervention_type in {"hard", "do"}:
-        return model.sample(samp_size, do_interventions={node: (100, 0.1)})
-    if intervention_type in {"shift", "soft"}:
-        return model.sample(samp_size, shift_interventions={node: (2.0, 1.0)})
-    raise ValueError(f"Unknown intervention_type '{intervention_type}'")
-
+# gene knockouts
 interv_datasets = {
-    str(idx): sample_intervention(target) for idx, target in enumerate(targets)
+    str(idx): model.sample(samp_size, do_interventions={target[0]: (100, 0.1)})
+    for idx, target in enumerate(targets)
 }
 data_dict = {"obs": obs_dataset} | interv_datasets
 np.savez(snakemake.output[0], weights=weights, targets=targets, **data_dict)

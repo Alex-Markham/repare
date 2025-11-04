@@ -15,17 +15,15 @@ def evaluate_model(model, true_dag, labels, reference, target_names):
     targets = [label_to_idx[name] for name in target_names if name != reference]
 
     # Create descendant masks for each target in the true DAG
-    target_des_masks = {}
-    for idx, target in enumerate(targets):
-        mask = np.zeros(len(true_dag), dtype=bool)
-        descendants = nx.descendants(true_dag, target)
-        mask[list(descendants) + [target]] = True
-        target_des_masks[str(idx)] = mask
-
-    ordered_masks = {
-        str(idx): target_des_masks[str(idx)] for idx in range(len(targets))
+    target_des_masks = {
+        idx: np.zeros(len(true_dag), bool) for idx in range(len(targets))
     }
-    true_partition = _get_totally_ordered_partition(ordered_masks)
+    for idx, target in enumerate(targets):
+        des = list(true_dag.successors(target)) + [target]
+        target_des_masks[idx][des] = True
+
+    # Get ground truth partition
+    true_partition = _get_totally_ordered_partition(target_des_masks)
 
     # Assign cluster labels to nodes based on true partition
     true_labels = np.zeros(len(true_dag), dtype=int)

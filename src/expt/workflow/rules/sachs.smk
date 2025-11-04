@@ -18,9 +18,8 @@ rule fit_sachs:
         model=base_path + "obs_idx={obs_idx}/model.pkl",
     params:
         alpha=0.05,
-        beta=0.05,
+        beta=0.1,
         assume=None,
-        refine_test="ks",
     script:
         "../scripts/fit_sachs.py"
 

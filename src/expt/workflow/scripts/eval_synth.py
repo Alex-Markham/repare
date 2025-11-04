@@ -18,18 +18,15 @@ weights = data["weights"]
 targets = data["targets"]
 
 true_dag = nx.DiGraph(weights.astype(bool))
-num_nodes = true_dag.number_of_nodes()
-
-target_des_masks = {}
-for idx, target in enumerate(targets):
-    mask = np.zeros(num_nodes, dtype=bool)
-    descendants = nx.descendants(true_dag, target[0])
-    mask[list(descendants) + [target[0]]] = True
-    target_des_masks[str(idx)] = mask
-
-ordered_masks = {str(idx): target_des_masks[str(idx)] for idx in range(len(targets))}
-true_partition = _get_totally_ordered_partition(ordered_masks)
-true_labels = np.zeros(num_nodes, dtype=int)
+target_des_masks = {
+    str(idx): np.zeros(len(true_dag), bool) for idx in range(len(targets))
+}
+for idx in target_des_masks:
+    target = targets[int(idx)][0]
+    des = list(true_dag.successors(target)) + [target]
+    target_des_masks[idx][des] = True
+true_partition = _get_totally_ordered_partition(target_des_masks)
+true_labels = np.zeros(len(true_dag))
 for label, part in enumerate(true_partition):
     true_labels[list(part)] = label
 est_labels = np.zeros(len(true_dag))

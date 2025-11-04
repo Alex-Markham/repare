@@ -43,10 +43,10 @@ def test_fit_ivn_chain_gaussian():
         return np.column_stack([x0, x1, x2])
 
     data_dict = {
-        "obs": (sample_env(0), set(), "obs"),
-        "do_x0": (sample_env(1, shift_target=0), {0}, "hard"),
-        "do_x1": (sample_env(2, shift_target=1), {1}, "hard"),
-        "do_x2": (sample_env(3, shift_target=2), {2}, "hard"),
+        "obs": sample_env(0),
+        "do_x0": (sample_env(1, shift_target=0), {0}),
+        "do_x1": (sample_env(2, shift_target=1), {1}),
+        "do_x2": (sample_env(3, shift_target=2), {2}),
     }
 
     model = PartitionDagModelIvn()
@@ -97,11 +97,10 @@ def test_intervention():
     for idx, target in enumerate(targets):
         target_nodes = set(target)
         sample = model.sample(1000, shift_interventions={target[0]: (2, 1)})
-        interv_datasets[idx] = (sample, target_nodes, "soft")
+        interv_datasets[idx] = (sample, target_nodes)
     # interv_datasets = {k: v - mu for k, v in interv_datasets.items()}
     # interv_datasets = {k: v / var for k, v in interv_datasets.items()}
 
-    data_dict = {"obs": (obs_dataset, set(), "obs")}
-    data_dict.update(interv_datasets)
+    data_dict = {"obs": obs_dataset} | interv_datasets
     model = PartitionDagModelIvn()
     model.fit(data_dict)
