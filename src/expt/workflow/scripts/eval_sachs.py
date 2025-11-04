@@ -13,16 +13,18 @@ def evaluate_model(model, true_dag, labels, obs_idx):
     targets.remove(obs_idx)
 
     # Create descendant masks for each target in true DAG
-    target_des_masks = {
-        idx: np.zeros(len(true_dag), bool) for idx in range(len(targets))
-    }
-    for idx in target_des_masks:
-        target = targets[idx]
-        des = list(true_dag.successors(target)) + [target]
-        target_des_masks[idx][des] = True
+    target_des_masks = {}
+    for idx, target in enumerate(targets):
+        mask = np.zeros(len(true_dag), dtype=bool)
+        descendants = nx.descendants(true_dag, target)
+        mask[list(descendants) + [target]] = True
+        target_des_masks[str(idx)] = mask
 
     # Get ground truth partition
-    true_partition = _get_totally_ordered_partition(target_des_masks)
+    ordered_masks = {
+        str(idx): target_des_masks[str(idx)] for idx in range(len(targets))
+    }
+    true_partition = _get_totally_ordered_partition(ordered_masks)
 
     # Create true labels for each node in the graph
     true_labels = np.zeros(len(true_dag))

@@ -22,6 +22,41 @@ def test_fit_oracle_basic():
             assert model.dag.has_edge((u,), (v,))
 
 
+def test_fit_ivn_chain_gaussian():
+    num_samples = 400
+
+    def sample_env(seed, shift_target=None, shift=3.0):
+        rng = np.random.default_rng(seed)
+        x0 = rng.normal(size=num_samples)
+        if shift_target == 0:
+            x0 = rng.normal(loc=shift, size=num_samples)
+        e1 = rng.normal(scale=0.4, size=num_samples)
+        if shift_target == 1:
+            x1 = rng.normal(loc=shift, size=num_samples)
+        else:
+            x1 = 0.8 * x0 + e1
+        e2 = rng.normal(scale=0.4, size=num_samples)
+        if shift_target == 2:
+            x2 = rng.normal(loc=shift, size=num_samples)
+        else:
+            x2 = 0.6 * x1 + e2
+        return np.column_stack([x0, x1, x2])
+
+    data_dict = {
+        "obs": (sample_env(0), set(), "obs"),
+        "do_x0": (sample_env(1, shift_target=0), {0}, "hard"),
+        "do_x1": (sample_env(2, shift_target=1), {1}, "hard"),
+        "do_x2": (sample_env(3, shift_target=2), {2}, "hard"),
+    }
+
+    model = PartitionDagModelIvn()
+    model.fit(data_dict, assume="gaussian")
+
+    assert set(model.dag.nodes) == {(0,), (1,), (2,)}
+    expected_edges = {((0,), (1,)), ((1,), (2,))}
+    assert set(model.dag.edges) == expected_edges
+
+
 def test_fit_oracle_extensive():
     digraph = nx.binomial_graph(100, 0.5, directed=True)
     true_order = list(rng(0).permutation(range(100)))
@@ -58,13 +93,15 @@ def test_intervention():
     # var = obs_dataset.std(0)
     # obs_dataset -= mu
     # obs_dataset /= var
-    interv_datasets = {
-        idx: model.sample(1000, shift_interventions={target[0]: (2, 1)})
-        for idx, target in enumerate(targets)
-    }
+    interv_datasets = {}
+    for idx, target in enumerate(targets):
+        target_nodes = set(target)
+        sample = model.sample(1000, shift_interventions={target[0]: (2, 1)})
+        interv_datasets[idx] = (sample, target_nodes, "soft")
     # interv_datasets = {k: v - mu for k, v in interv_datasets.items()}
     # interv_datasets = {k: v / var for k, v in interv_datasets.items()}
 
-    data_dict = {"obs": obs_dataset} | interv_datasets
+    data_dict = {"obs": (obs_dataset, set(), "obs")}
+    data_dict.update(interv_datasets)
     model = PartitionDagModelIvn()
     model.fit(data_dict)

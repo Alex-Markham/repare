@@ -3,7 +3,7 @@ from collections import deque
 import dcor
 import networkx as nx
 import numpy as np
-from scipy.stats import chi2, chi2_contingency, kstest
+from scipy.stats import chi2, chi2_contingency, f, kstest
 
 from .utils import SimpleCanCorr
 
@@ -73,26 +73,94 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
     def __init__(self, rng=np.random.default_rng(0)) -> None:
         super().__init__(rng)
 
-    def fit(self, data_dict, alpha=0.05, beta=0.05, assume=None):
+    def fit(self, data_dict, alpha=0.05, beta=0.05, assume=None, refine_test="ks"):
         self.assume = assume
-        self.data_dict = data_dict
+        self.refine_test = (refine_test or "ks").lower()
+        data_dict = data_dict.copy()
         self.beta = beta
         obs = data_dict.pop("obs")
+
+        def _split_env(env):
+            env_type = None
+            if isinstance(env, tuple):
+                if len(env) == 2:
+                    data, targets = env
+                elif len(env) == 3:
+                    data, targets, env_type = env
+                else:
+                    raise ValueError(
+                        "Environment tuple must be (data, targets) or (data, targets, type)"
+                    )
+            elif isinstance(env, dict):
+                if "data" not in env:
+                    raise ValueError("Environment dict must contain a 'data' key")
+                data = env["data"]
+                targets = env.get("targets", ())
+                env_type = env.get("type", env.get("intervention_type"))
+            else:
+                data = env
+                targets = ()
+            data_array = np.asarray(data)
+            target_set = set(targets)
+            if env_type is None:
+                env_type = "obs" if len(target_set) == 0 else "hard"
+            return data_array, target_set, env_type
+
+        obs_array, obs_targets, obs_type = _split_env(obs)
+        if obs_targets:
+            raise ValueError("Observational dataset cannot have intervention targets")
+
+        processed_envs = {}
+        env_targets = {}
+        env_types = {}
+        for key, env in data_dict.items():
+            env_array, targets, env_type = _split_env(env)
+            processed_envs[key] = env_array
+            env_targets[key] = targets
+            env_types[key] = env_type
+
+        self.obs = obs_array
+        self.obs_type = obs_type
+        self.data_dict = processed_envs
+        self.env_targets = env_targets
+        self.env_types = env_types
+        obs_data = self.obs
 
         if self.assume is None:
 
             def p_val(post_ivn):
-                res = kstest(obs, post_ivn)
-                return res.pvalue
+                baseline = np.asarray(obs_data)
+                comparison = np.asarray(post_ivn)
+                if baseline.ndim == 1:
+                    baseline = baseline[:, None]
+                if comparison.ndim == 1:
+                    comparison = comparison[:, None]
+                num_feats = baseline.shape[1]
+                pvals = np.empty(num_feats)
+                test = self.refine_test
+                for j in range(num_feats):
+                    x = baseline[:, j]
+                    y = comparison[:, j]
+                    if test == "ks":
+                        res = kstest(x, y)
+                        pvals[j] = res.pvalue
+                    elif test == "energy":
+                        result = dcor.homogeneity.energy_test(
+                            x[:, None], y[:, None], num_resamples=199
+                        )
+                        pvals[j] = result.pvalue
+                    else:
+                        raise ValueError(f"Unknown refine_test '{self.refine_test}'")
+                return pvals
 
         # Gaussian LRT: vectorized over columns of post_ivn
-        if self.assume == "gaussian":
+        elif self.assume == "gaussian":
 
             def p_val(post_ivn):
-                num_feats = obs.shape[1]
+                num_feats = obs_data.shape[1]
                 pvals = np.empty(num_feats)
                 for j in range(num_feats):
-                    x = obs[:, j]
+                    x = obs_data[:, j]
                     y = post_ivn[:, j]
 
                     def ll(data):
@@ -108,13 +176,13 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                 return pvals
 
         # Discrete chi2: vectorized over columns of post_ivn
-        if self.assume == "discrete":
+        elif self.assume == "discrete":
 
             def p_val(post_ivn):
-                num_feats = obs.shape[1]
+                num_feats = obs_data.shape[1]
                 pvals = np.empty(num_feats)
                 for j in range(num_feats):
-                    x = obs[:, j]
+                    x = obs_data[:, j]
                     y = post_ivn[:, j]
                     vals = np.concatenate([x, y])
                     uniq, inv = np.unique(vals, return_inverse=True)
@@ -129,11 +197,13 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                     _, pval, _, _ = chi2_contingency(table, correction=False)
                     pvals[j] = float(pval)
                 return pvals
+        else:
+            raise ValueError(f"Unsupported assumption '{self.assume}'")
 
-        results = {idx: p_val(post_ivn) < alpha for idx, post_ivn in data_dict.items()}
+        results = {idx: p_val(post_ivn) < alpha for idx, post_ivn in self.data_dict.items()}
         self.partition = _get_totally_ordered_partition(results)
-        init_partition = [set(range(obs.shape[1]))]  # trivial coarsening
-        self.dag.add_node(tuple(range(obs.shape[1])))
+        init_partition = [set(range(self.obs.shape[1]))]  # trivial coarsening
+        self.dag.add_node(tuple(range(self.obs.shape[1])))
         self.refinable = deque(init_partition)
         while len(self.refinable) > 0:
             self._recurse()
@@ -148,19 +218,12 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         return to_refine, u, v
 
     def _is_adj(self, pa, ch):
-        # Compute dependence between sets pa and ch
-        xy_indices = list(pa.union(ch))
-
-        # Separate data columns for pa and ch
-        pa_mask = [idx in pa for idx in xy_indices]
-        ch_mask = [idx in ch for idx in xy_indices]
-
         if self.assume is None:
 
             def p_val(x, y):
                 test_result = dcor.independence.distance_correlation_t_test(x, y)
                 return test_result.pvalue
-
+            
         if self.assume == "gaussian":
 
             def p_val(x, y):
@@ -183,18 +246,38 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             (or fall back to Fisher/exact/permutation). Include
             imports and a minimal example ."""
             p_val = 1
-        p_vals = []
-        for env in self.data_dict.values():
-            xy_data = env[:, xy_indices]  # shape (samples x variables)
-            x = xy_data[:, pa_mask]
-            y = xy_data[:, ch_mask]
+        pa_indices = sorted(pa)
+        ch_indices = sorted(ch)
+
+        datasets = [
+            (self.obs, set(), getattr(self, "obs_type", "obs"))
+        ] + [
+            (
+                env,
+                self.env_targets.get(key, set()),
+                self.env_types.get(key, "hard"),
+            )
+            for key, env in self.data_dict.items()
+        ]
+
+        p_values = []
+        for env, targets, env_type in datasets:
+            if env_type in {"hard", "do"} and (
+                targets.intersection(pa) or targets.intersection(ch)
+            ):
+                continue
+            x = env[:, pa_indices]
+            y = env[:, ch_indices]
             if x.ndim == 1:
                 x = x[:, None]
             if y.ndim == 1:
                 y = y[:, None]
-            p_vals.append(p_val(x, y))
+            p_values.append(p_val(x, y))
 
-        return max(p_vals) <= self.beta
+        if not p_values:
+            return False
+
+        return max(p_values) <= self.beta
 
 
 def _get_totally_ordered_partition(ivn_biadj):
