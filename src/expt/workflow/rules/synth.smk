@@ -7,7 +7,7 @@ rule data_generation_synth:
     params:
         num_nodes=10,
         num_intervs=4,
-        intervention_type="hard",
+        intervention_type="soft",
     script:
         "../scripts/gen_synth.py"
 
