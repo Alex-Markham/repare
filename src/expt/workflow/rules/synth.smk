@@ -6,7 +6,8 @@ rule data_generation_synth:
         base_path + "dataset.npz",
     params:
         num_nodes=10,
-        num_intervs=2,
+        num_intervs=4,
+        intervention_type="soft",
     script:
         "../scripts/gen_synth.py"
 
@@ -20,6 +21,7 @@ rule model_fitting_synth:
         alpha=0.01,
         beta=0.01,
         assume="gaussian",
+        refine_test="ttest",
     script:
         "../scripts/fit_synth.py"
 
@@ -42,19 +44,20 @@ rule aggregation_synth:
             # density=[0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
             density=[0.2, 0.5, 0.8],
             samp_size=[
+                10,
                 100,
-                200,
-                500,
+                #200,
+                #500,
                 1000,
                 # 2000,
                 # 5000,
                 10000,
                 # 20000,
                 # 50000,
-                # 100000,
+                #100000,
                 # 200000,
                 # 500000,
-                # 1000000,
+                #1000000,
             ],
         ),
     output:

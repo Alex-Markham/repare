@@ -4,7 +4,7 @@ extended_path = base_path + "samp_size={samp_size}/seed={seed}"
 
 rule synthesize_ground_truth:
     input:
-        "resources/sachs.interventional.txt",
+        "src/expt/resources/sachs.interventional.txt",
     output:
         base_path + "synthetic_ground_truth.pkl",
     script:
@@ -31,6 +31,7 @@ rule fit_synthsachs:
         alpha=0.05,
         beta=0.1,
         assume=None,
+        refine_test="ks",
     script:
         "../scripts/fit_synthsachs.py"
 
