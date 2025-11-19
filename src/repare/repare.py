@@ -3,7 +3,7 @@ from collections import deque
 import dcor
 import networkx as nx
 import numpy as np
-from scipy.stats import chi2, chi2_contingency, f, kstest
+from scipy.stats import chi2, chi2_contingency, f, kstest, ks_2samp
 
 from .utils import SimpleCanCorr
 
@@ -142,8 +142,14 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                     x = baseline[:, j]
                     y = comparison[:, j]
                     if test == "ks":
-                        res = kstest(x, y)
-                        pvals[j] = res.pvalue
+                        for j in range(num_feats):
+                            stat = ks_2samp(
+                                baseline[:, j],
+                                comparison[:, j],
+                                alternative="two-sided",
+                                mode="auto",
+                            )
+                            pvals[j] = stat.pvalue
                     elif test == "energy":
                         result = dcor.homogeneity.energy_test(
                             x[:, None], y[:, None], num_resamples=199
