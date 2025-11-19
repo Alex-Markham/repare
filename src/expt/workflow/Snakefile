@@ -1,11 +1,17 @@
 include: "rules/synth.smk"
 include: "rules/sachs.smk"
 include: "rules/synthsachs.smk"
+include: "rules/causalchamber.smk"
 
 
 rule all:
     input:
-        "results/fscores.pdf",
-        "results/ari.pdf",
-        # "results/sachs.tex",
-        # "results/synthsachs_plot.pdf",
+        expand("results/fscores_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
+        expand("results/ari_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
+        "results/sachs.tex",
+        "results/synthsachs_plot.pdf",
+        "results/causalchamber/dag.png",
+        "results/causalchamber/dag_summary.txt",
+        "results/causalchamber/grid_metrics.csv",
+        "results/causalchamber/method_metrics.csv",
+        "results/causalchamber/ut_grid_metrics.csv"
