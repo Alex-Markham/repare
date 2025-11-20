@@ -3,7 +3,7 @@ base_path = "results/sachs/"
 
 rule prepare_sachs:
     input:
-        "src/expt/resources/sachs.interventional.txt",
+        "resources/sachs.interventional.txt",
     output:
         base_path + "dataset.pkl",
     script:
