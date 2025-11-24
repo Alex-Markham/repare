@@ -1,4 +1,5 @@
 import pickle
+import time
 
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -27,7 +28,9 @@ for idx in ivn_idcs:
 
 # fit model
 model = PartitionDagModelIvn()
+start = time.perf_counter()
 model.fit(data_dict, alpha, beta, assume, refine_test=refine_test)
+model.fit_runtime_sec = time.perf_counter() - start
 
 # plot learned DAG
 fig = plt.figure()

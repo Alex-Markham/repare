@@ -1,4 +1,5 @@
 import pickle
+import time
 
 import numpy as np
 from repare.repare import PartitionDagModelIvn
@@ -30,7 +31,9 @@ for idx, target in enumerate(targets):
     tgt = set(np.atleast_1d(target).astype(int))
     data_dict[str(idx)] = (data[str(idx)], tgt, intervention_type)
 model = PartitionDagModelIvn()
+start = time.perf_counter()
 model.fit(data_dict, alpha, beta, assume, refine_test=refine_test)
+model.fit_runtime_sec = time.perf_counter() - start
 
 # save output
 with open(snakemake.output[0], "wb") as f:
