@@ -3,7 +3,6 @@ from snakemake.io import directory
 base_path = "results/causalchamber/"
 base_path_all = "results/causalchamber_all/"
 
-
 rule fit_causalchamber_grid:
     output:
         dag=base_path + "dag.png",
@@ -44,6 +43,7 @@ rule fit_causalchamber_grid_all:
         ut_alphas=[0.0001, 0.001, 0.01, 0.1],
         target_mode="all",
         include_grouped=False,
+
     script:
         "../scripts/fit_causalchamber_grid.py"
 
@@ -62,3 +62,4 @@ rule causalchamber_all:
         base_path_all + "method_metrics.csv",
         base_path_all + "ut_grid_metrics.csv",
         base_path_all + "grid_runs",
+
