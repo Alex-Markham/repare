@@ -79,6 +79,8 @@ def evaluate_model(model, true_dag, labels, obs_idx):
         "fscore": fscore,
         "num_parts": model.dag.number_of_nodes(),
         "num_edges": model.dag.number_of_edges(),
+        "runtime_sec": float(getattr(model, "fit_runtime_sec", np.nan)),
+        "score": float(getattr(model, "score", np.nan)),
     }
 
 

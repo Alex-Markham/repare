@@ -1,4 +1,5 @@
 from collections import deque
+import math
 
 import dcor
 import networkx as nx
@@ -72,6 +73,12 @@ class PartitionDagModelOracle(object):
 class PartitionDagModelIvn(PartitionDagModelOracle):
     def __init__(self, rng=np.random.default_rng(0)) -> None:
         super().__init__(rng)
+        self.partition_tests = {}
+        self.partition_score = 0.0
+        self.edge_tests = []
+        self.edge_score = 0.0
+        self.score = 0.0
+        self.fit_metadata = {}
 
     def fit(self, data_dict, alpha=0.05, beta=0.05, assume=None, refine_test="ks"):
         self.assume = assume
@@ -172,7 +179,8 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                     def ll(data):
                         m = data.size
                         mu = data.mean()
-                        s2 = np.mean((data - mu) ** 2)
+                        s2 = float(np.mean((data - mu) ** 2))
+                        s2 = max(s2, 1e-12)
                         return -0.5 * m * (np.log(2 * np.pi * s2) + 1)
 
                     ll_sep = ll(x) + ll(y)
@@ -206,13 +214,36 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         else:
             raise ValueError(f"Unsupported assumption '{self.assume}'")
 
-        results = {idx: p_val(post_ivn) < alpha for idx, post_ivn in self.data_dict.items()}
-        self.partition = _get_totally_ordered_partition(results)
-        init_partition = [set(range(self.obs.shape[1]))]  # trivial coarsening
+        self.partition_tests = {}
+        self.partition_score = 0.0
+        partition_masks = {}
+        clip = lambda arr: np.clip(arr, 1e-300, 1.0)
+        for idx, post_ivn in self.data_dict.items():
+            pvals = np.asarray(p_val(post_ivn), dtype=float)
+            self.partition_tests[idx] = pvals
+            mask = pvals < alpha
+            partition_masks[idx] = mask
+            sig = pvals[mask]
+            if sig.size:
+                self.partition_score += float(-np.log(clip(sig)).sum())
+        self.partition = _get_totally_ordered_partition(partition_masks)
+        init_partition = [set(range(self.obs.shape[1]))]  
         self.dag.add_node(tuple(range(self.obs.shape[1])))
         self.refinable = deque(init_partition)
+        self.edge_tests = []
+        self.edge_score = 0.0
         while len(self.refinable) > 0:
             self._recurse()
+        self.score = float(self.partition_score + self.edge_score)
+        self.fit_metadata = dict(
+            alpha=alpha,
+            beta=beta,
+            partition_score=self.partition_score,
+            edge_score=self.edge_score,
+            score=self.score,
+            num_parts=self.dag.number_of_nodes(),
+            num_edges=self.dag.number_of_edges(),
+        )
         return self
 
     def _refine(self):
@@ -233,13 +264,12 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         if self.assume == "gaussian":
 
             def p_val(x, y):
-                # bug in statsmodels.multivariate.cancorr, so can't use the following
-                # cc = CanCorr(y, x)
-                # test_res = cc.corr_test()
-                # return test_res.stats_mv.loc["Wilks' lambda", "Pr > F"]
-                cca = SimpleCanCorr(x, y)
-                result = cca.wilks_lambda_test()
-                return result.loc[0, "Pr > F"]
+                try:
+                    cca = SimpleCanCorr(x, y)
+                    result = cca.wilks_lambda_test()
+                    return result.loc[0, "Pr > F"]
+                except (ValueError, np.linalg.LinAlgError):
+                    return 1.0
 
         if self.assume == "discrete":
             """For paired samples X (n×p) and Y (n×q) where both are
@@ -281,9 +311,32 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             p_values.append(p_val(x, y))
 
         if not p_values:
+            self.edge_tests.append(
+                {
+                    "pa": tuple(pa_indices),
+                    "ch": tuple(ch_indices),
+                    "p_value": None,
+                    "decision": False,
+                    "reason": "insufficient_data",
+                }
+            )
             return False
 
-        return max(p_values) <= self.beta
+        test_p = float(max(p_values))
+        decision = test_p <= self.beta
+        record = {
+            "pa": tuple(pa_indices),
+            "ch": tuple(ch_indices),
+            "p_value": test_p,
+            "decision": decision,
+        }
+        if decision:
+            contrib = -math.log(max(test_p, 1e-300))
+            self.edge_score += contrib
+            record["score_contrib"] = contrib
+        self.edge_tests.append(record)
+
+        return decision
 
 
 def _get_totally_ordered_partition(ivn_biadj):

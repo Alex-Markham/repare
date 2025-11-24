@@ -76,5 +76,7 @@ results = {
     "seed": seed,
     "fscore": f_score,
     "ari": ar_index,
+    "runtime_sec": float(getattr(model, "fit_runtime_sec", np.nan)),
+    "score": float(getattr(model, "score", np.nan)),
 }
 pd.DataFrame([results]).to_csv(snakemake.output[0], index=False)
