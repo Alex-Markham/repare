@@ -105,3 +105,28 @@ def test_intervention():
     data_dict.update(interv_datasets)
     model = PartitionDagModelIvn()
     model.fit(data_dict)
+
+
+def test_expand_coarsened_dag():
+    model = PartitionDagModelIvn()
+    model.obs = np.zeros((5, 6,))
+    model.dag = nx.DiGraph()
+    block_a = (3, 0, 2,)
+    block_b = (1,)
+    block_c = (4, 5,)
+    model.dag.add_node(block_a)
+    model.dag.add_node(block_b)
+    model.dag.add_node(block_c)
+    model.dag.add_edge(block_a, block_c)
+    model.dag.add_edge(block_b, block_c)
+    adjacency = model.expand_coarsened_dag()
+
+    expected = np.zeros((6, 6), dtype=int)
+    for src in block_a:
+        for dst in block_c:
+            expected[src, dst] = 1
+    for src in block_b:
+        for dst in block_c:
+            expected[src, dst] = 1
+
+    assert np.array_equal(adjacency, expected)

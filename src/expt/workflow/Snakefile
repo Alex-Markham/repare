@@ -15,10 +15,4 @@ rule all:
         "results/causalchamber/grid_metrics.csv",
         "results/causalchamber/method_metrics.csv",
         "results/causalchamber/ut_grid_metrics.csv",
-        "results/causalchamber_all/dag.png",
-        "results/causalchamber_all/dag_summary.txt",
-        "results/causalchamber_all/grid_metrics.csv",
-        "results/causalchamber_all/method_metrics.csv",
-        "results/causalchamber_all/ut_grid_metrics.csv",
         "results/causalchamber/grid_runs",
-        "results/causalchamber_all/grid_runs"

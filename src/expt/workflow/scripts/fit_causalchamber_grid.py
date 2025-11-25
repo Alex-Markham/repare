@@ -16,6 +16,7 @@ from sklearn.metrics import adjusted_rand_score
 
 import gies
 import gnies
+from gnies.scores.gnies_score import GnIESScore
 from causal_chambers import ut_igsp
 from causalchamber.datasets import Dataset
 from causalchamber.ground_truth import main as gt
@@ -90,14 +91,14 @@ def _stack(dataset, experiments, feature_cols):
     return np.vstack([_load_matrix(dataset, exp, feature_cols) for exp in experiments])
 
 
-def drop_constant_features(blocks, feature_cols, aggregate_sets):
+def drop_constant_features(blocks, feature_cols, partition_parts):
     mask = blocks["obs"].std(axis=0) > 0
     if mask.all():
-        return blocks, feature_cols, aggregate_sets
+        return blocks, feature_cols, partition_parts
     feature_cols = [name for name, keep in zip(feature_cols, mask) if keep]
-    aggregate_sets = [atoms for atoms, keep in zip(aggregate_sets, mask) if keep]
+    partition_parts = [atoms for atoms, keep in zip(partition_parts, mask) if keep]
     blocks = {key: value[:, mask] for key, value in blocks.items()}
-    return blocks, feature_cols, aggregate_sets
+    return blocks, feature_cols, partition_parts
 
 
 def format_hparam(value):
@@ -153,11 +154,11 @@ def persist_model_artifacts(model, feature_cols, root, metrics, alpha, beta):
         json.dump(metrics, f, indent=2, default=float)
 
 
-def build_true_graph(aggregate_sets, true_dag_full):
+def build_true_graph(parts, true_dag_full):
     graph = nx.DiGraph()
-    graph.add_nodes_from(range(len(aggregate_sets)))
-    for i, src_atoms in enumerate(aggregate_sets):
-        for j, dst_atoms in enumerate(aggregate_sets):
+    graph.add_nodes_from(range(len(parts)))
+    for i, src_atoms in enumerate(parts):
+        for j, dst_atoms in enumerate(parts):
             if i == j:
                 continue
             if any(true_dag_full.has_edge(u, v) for u in src_atoms for v in dst_atoms):
@@ -165,24 +166,24 @@ def build_true_graph(aggregate_sets, true_dag_full):
     return graph
 
 
-def descendant_mask(atom_indices, aggregate_sets, true_dag_full):
+def descendant_mask(atom_indices, parts, true_dag_full):
     closure = set(atom_indices)
     for idx in list(atom_indices):
         closure.update(nx.descendants(true_dag_full, idx))
-    mask = np.zeros(len(aggregate_sets), dtype=bool)
-    for agg_idx, atoms in enumerate(aggregate_sets):
+    mask = np.zeros(len(parts), dtype=bool)
+    for part_idx, atoms in enumerate(parts):
         if atoms & closure:
-            mask[agg_idx] = True
+            mask[part_idx] = True
     return mask
 
 
-def ground_truth_partition(target_dict, aggregate_sets, true_dag_full):
+def ground_truth_partition(target_dict, parts, true_dag_full):
     ordered_masks = {}
     for order, label in enumerate(sorted(target_dict)):
-        atom_union = set().union(*[aggregate_sets[idx] for idx in target_dict[label]])
-        ordered_masks[str(order)] = descendant_mask(atom_union, aggregate_sets, true_dag_full)
+        atom_union = set().union(*[parts[idx] for idx in target_dict[label]])
+        ordered_masks[str(order)] = descendant_mask(atom_union, parts, true_dag_full)
     partition = _get_totally_ordered_partition(ordered_masks)
-    labels = np.zeros(len(aggregate_sets), dtype=int)
+    labels = np.zeros(len(parts), dtype=int)
     for label, block in enumerate(partition):
         labels[list(block)] = label
     return partition, labels
@@ -206,9 +207,9 @@ def prepare_dataset(dataset_name, root, chamber, configuration, single_target_ex
     for label, exp_name in single_target_experiments.items():
         base_blocks[label] = _load_matrix(dataset, exp_name, feature_cols)
 
-    aggregate_sets = [{full_idx[col]} for col in feature_cols]
-    blocks, feature_cols, aggregate_sets = drop_constant_features(
-        base_blocks, feature_cols, aggregate_sets
+    partition_parts = [{full_idx[col]} for col in feature_cols]
+    blocks, feature_cols, partition_parts = drop_constant_features(
+        base_blocks, feature_cols, partition_parts
     )
 
     name_to_idx = {name: i for i, name in enumerate(feature_cols)}
@@ -225,8 +226,8 @@ def prepare_dataset(dataset_name, root, chamber, configuration, single_target_ex
 
     true_dag_full = nx.DiGraph()
     true_dag_full.add_edges_from((full_idx[u], full_idx[v]) for u, v in gt.edges(chamber, configuration))
-    true_graph = build_true_graph(aggregate_sets, true_dag_full)
-    _, true_labels = ground_truth_partition(group_targets, aggregate_sets, true_dag_full)
+    true_graph = build_true_graph(partition_parts, true_dag_full)
+    _, true_labels = ground_truth_partition(group_targets, partition_parts, true_dag_full)
 
     single_env_labels = [label for label in single_target_experiments if label in name_to_idx]
     single_env_targets = {label: {name_to_idx[label]} for label in single_env_labels}
@@ -235,7 +236,7 @@ def prepare_dataset(dataset_name, root, chamber, configuration, single_target_ex
     return dict(
         blocks=blocks,
         feature_cols=feature_cols,
-        aggregate_sets=aggregate_sets,
+        partition_parts=partition_parts,
         group_targets=group_targets,
         true_graph=true_graph,
         true_labels=true_labels,
@@ -288,7 +289,7 @@ def build_data_dict(blocks, group_targets):
 
 def run_repare_grid(
     blocks,
-    aggregate_sets,
+    partition_parts,
     group_targets,
     true_graph,
     true_labels,
@@ -299,6 +300,12 @@ def run_repare_grid(
 ):
     records = []
     models = {}
+    env_labels = list(group_targets)
+    gnies_data = [blocks["obs"]]
+    for label in env_labels:
+        gnies_data.append(blocks[label])
+    intervention_union = set().union(*group_targets.values()) if group_targets else set()
+    gnies_score_class = GnIESScore(gnies_data, intervention_union, lmbda=0.0, centered=True)
     for alpha in alphas:
         for beta in betas:
             start = time.perf_counter()
@@ -311,18 +318,20 @@ def run_repare_grid(
             )
             fit_time = time.perf_counter() - start
             model.fit_runtime_sec = fit_time
-            est_labels = np.zeros(len(aggregate_sets), dtype=int)
+            est_labels = np.zeros(len(partition_parts), dtype=int)
             for label, block in enumerate(model.dag.nodes):
                 est_labels[list(block)] = label
             ari = adjusted_rand_score(true_labels, est_labels)
             edge_stats = partition_edge_metrics(model.dag, true_graph)
+            # Score expanded DAG using GnIES full score.
+            expanded_adj = model.expand_coarsened_dag()
+            gnies_value = float(gnies_score_class.full_score(expanded_adj))
+            model.score = gnies_value
             row = dict(
                 alpha=float(alpha),
                 beta=float(beta),
                 ari=ari,
-                score=float(getattr(model, "score", np.nan)),
-                partition_score=float(getattr(model, "partition_score", np.nan)),
-                edge_score=float(getattr(model, "edge_score", np.nan)),
+                score=gnies_value,
                 fit_time=fit_time,
                 num_parts=model.dag.number_of_nodes(),
                 num_edges=model.dag.number_of_edges(),
@@ -334,8 +343,8 @@ def run_repare_grid(
     df = pd.DataFrame(records)
     if not records:
         raise RuntimeError("No RePaRe models were fitted.")
-    score_row = min(records, key=lambda r: (r["score"], -r["ari"], -r["f1"], -r["precision"]))
-    oracle_row = max(records, key=lambda r: (r["ari"], r["f1"], r["precision"], -r["score"]))
+    score_row = min(records, key=lambda r: (r["score"]))
+    oracle_row = max(records, key=lambda r: (r["ari"], r["f1"], r["precision"]))
     score_model = models[(score_row["alpha"], score_row["beta"])]
     oracle_model = models[(oracle_row["alpha"], oracle_row["beta"])]
     return df, score_model, oracle_model, score_row, oracle_row
@@ -487,7 +496,7 @@ def main():
     data = prepare_dataset(dataset_name, root, chamber, configuration, single_target_map)
     blocks = data["blocks"]
     feature_cols = data["feature_cols"]
-    aggregate_sets = data["aggregate_sets"]
+    partition_parts = data["partition_parts"]
     group_targets = data["group_targets"]
     true_graph = data["true_graph"]
     true_labels = data["true_labels"]
@@ -502,7 +511,7 @@ def main():
     if include_grouped:
         grouped_df, score_model, oracle_model, score_params, oracle_params = run_repare_grid(
             blocks,
-            aggregate_sets,
+            partition_parts,
             group_targets,
             true_graph,
             true_labels,
@@ -538,7 +547,7 @@ def main():
         ungrouped_data[label] = (blocks[label], idx, "soft")
     _, ungrouped_true_labels = ground_truth_partition(
         {label: single_env_targets[label] for label in single_env_labels},
-        aggregate_sets,
+        partition_parts,
         true_dag_full,
     )
     (
@@ -549,7 +558,7 @@ def main():
         ungrouped_oracle_params,
     ) = run_repare_grid(
         blocks,
-        aggregate_sets,
+        partition_parts,
         {label: single_env_targets[label] for label in single_env_labels},
         true_graph,
         ungrouped_true_labels,
