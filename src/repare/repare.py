@@ -3,7 +3,7 @@ from collections import deque
 import dcor
 import networkx as nx
 import numpy as np
-from scipy.stats import chi2, chi2_contingency, f, kstest, ks_2samp
+from scipy.stats import chi2, chi2_contingency, ks_2samp
 
 from .utils import SimpleCanCorr
 
@@ -72,10 +72,6 @@ class PartitionDagModelOracle(object):
 class PartitionDagModelIvn(PartitionDagModelOracle):
     def __init__(self, rng=np.random.default_rng(0)) -> None:
         super().__init__(rng)
-        self.partition_tests = {}
-        self.partition_score = 0.0
-        self.edge_tests = []
-        self.edge_score = 0.0
         self.score = 0.0
         self.fit_metadata = {}
 
