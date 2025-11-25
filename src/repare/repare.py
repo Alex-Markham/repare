@@ -1,5 +1,4 @@
 from collections import deque
-import math
 
 import dcor
 import networkx as nx
@@ -214,32 +213,20 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         else:
             raise ValueError(f"Unsupported assumption '{self.assume}'")
 
-        self.partition_tests = {}
-        self.partition_score = 0.0
         partition_masks = {}
-        clip = lambda arr: np.clip(arr, 1e-300, 1.0)
         for idx, post_ivn in self.data_dict.items():
             pvals = np.asarray(p_val(post_ivn), dtype=float)
-            self.partition_tests[idx] = pvals
-            mask = pvals < alpha
-            partition_masks[idx] = mask
-            sig = pvals[mask]
-            if sig.size:
-                self.partition_score += float(-np.log(clip(sig)).sum())
+            partition_masks[idx] = pvals < alpha
         self.partition = _get_totally_ordered_partition(partition_masks)
         init_partition = [set(range(self.obs.shape[1]))]  
         self.dag.add_node(tuple(range(self.obs.shape[1])))
         self.refinable = deque(init_partition)
-        self.edge_tests = []
-        self.edge_score = 0.0
         while len(self.refinable) > 0:
             self._recurse()
-        self.score = float(self.partition_score + self.edge_score)
+        self.score = float("nan")
         self.fit_metadata = dict(
             alpha=alpha,
             beta=beta,
-            partition_score=self.partition_score,
-            edge_score=self.edge_score,
             score=self.score,
             num_parts=self.dag.number_of_nodes(),
             num_edges=self.dag.number_of_edges(),
@@ -311,32 +298,24 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             p_values.append(p_val(x, y))
 
         if not p_values:
-            self.edge_tests.append(
-                {
-                    "pa": tuple(pa_indices),
-                    "ch": tuple(ch_indices),
-                    "p_value": None,
-                    "decision": False,
-                    "reason": "insufficient_data",
-                }
-            )
             return False
 
         test_p = float(max(p_values))
-        decision = test_p <= self.beta
-        record = {
-            "pa": tuple(pa_indices),
-            "ch": tuple(ch_indices),
-            "p_value": test_p,
-            "decision": decision,
-        }
-        if decision:
-            contrib = -math.log(max(test_p, 1e-300))
-            self.edge_score += contrib
-            record["score_contrib"] = contrib
-        self.edge_tests.append(record)
+        return test_p <= self.beta
 
-        return decision
+    def expand_coarsened_dag(self):
+        """Expand the coarse partition DAG into a full adjacency matrix."""
+        if not hasattr(self, "obs"):
+            raise ValueError("Observational data must be provided before expansion.")
+        num_features = self.obs.shape[1]
+        adjacency = np.zeros((num_features, num_features), dtype=int)
+
+        for src_part, dst_part in self.dag.edges:
+            for src in src_part:
+                for dst in dst_part:
+                    adjacency[src, dst] = 1
+
+        return adjacency
 
 
 def _get_totally_ordered_partition(ivn_biadj):
