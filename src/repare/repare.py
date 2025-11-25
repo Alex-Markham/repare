@@ -1,4 +1,5 @@
 from collections import deque
+import math
 
 import dcor
 import networkx as nx
@@ -217,6 +218,8 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         init_partition = [set(range(self.obs.shape[1]))]  
         self.dag.add_node(tuple(range(self.obs.shape[1])))
         self.refinable = deque(init_partition)
+        self.edge_tests = []
+        self.edge_score = 0.0
         while len(self.refinable) > 0:
             self._recurse()
         self.score = float("nan")
@@ -294,6 +297,15 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             p_values.append(p_val(x, y))
 
         if not p_values:
+            self.edge_tests.append(
+                {
+                    "pa": tuple(pa_indices),
+                    "ch": tuple(ch_indices),
+                    "p_value": None,
+                    "decision": False,
+                    "reason": "insufficient_data",
+                }
+            )
             return False
 
         test_p = float(max(p_values))
