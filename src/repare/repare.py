@@ -1,5 +1,4 @@
 from collections import deque
-import math
 
 import dcor
 import networkx as nx
@@ -215,7 +214,7 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             pvals = np.asarray(p_val(post_ivn), dtype=float)
             partition_masks[idx] = pvals < alpha
         self.partition = _get_totally_ordered_partition(partition_masks)
-        init_partition = [set(range(self.obs.shape[1]))]  
+        init_partition = [set(range(self.obs.shape[1]))]
         self.dag.add_node(tuple(range(self.obs.shape[1])))
         self.refinable = deque(init_partition)
         self.edge_tests = []
@@ -246,7 +245,7 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             def p_val(x, y):
                 test_result = dcor.independence.distance_correlation_t_test(x, y)
                 return test_result.pvalue
-            
+
         if self.assume == "gaussian":
 
             def p_val(x, y):
@@ -271,9 +270,7 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         pa_indices = sorted(pa)
         ch_indices = sorted(ch)
 
-        datasets = [
-            (self.obs, set(), getattr(self, "obs_type", "obs"))
-        ] + [
+        datasets = [(self.obs, set(), getattr(self, "obs_type", "obs"))] + [
             (
                 env,
                 self.env_targets.get(key, set()),
