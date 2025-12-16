@@ -297,15 +297,26 @@ def run_repare_grid(
     betas,
     grid_root=None,
     feature_cols=None,
+    score_mode="gnies",
 ):
     records = []
     models = {}
     env_labels = list(group_targets)
-    gnies_data = [blocks["obs"]]
-    for label in env_labels:
-        gnies_data.append(blocks[label])
-    intervention_union = set().union(*group_targets.values()) if group_targets else set()
-    gnies_score_class = GnIESScore(gnies_data, intervention_union, lmbda=0.0, centered=True)
+    score_mode = (score_mode or "gnies").lower()
+    gnies_score_class = None
+    chain_datasets = None
+    if score_mode == "gnies":
+        gnies_data = [blocks["obs"]]
+        for label in env_labels:
+            gnies_data.append(blocks[label])
+        intervention_union = set().union(*group_targets.values()) if group_targets else set()
+        gnies_score_class = GnIESScore(gnies_data, intervention_union, lmbda=0.0, centered=True)
+    elif score_mode == "chain":
+        chain_datasets = [blocks["obs"]]
+        for label in env_labels:
+            chain_datasets.append(blocks[label])
+    else:
+        raise ValueError(f"Unknown score_mode '{score_mode}'")
     for alpha in alphas:
         for beta in betas:
             start = time.perf_counter()
@@ -323,15 +334,17 @@ def run_repare_grid(
                 est_labels[list(block)] = label
             ari = adjusted_rand_score(true_labels, est_labels)
             edge_stats = partition_edge_metrics(model.dag, true_graph)
-            # Score expanded DAG using GnIES full score.
-            expanded_adj = model.expand_coarsened_dag()
-            gnies_value = float(gnies_score_class.full_score(expanded_adj))
-            model.score = gnies_value
+            if score_mode == "gnies":
+                expanded_adj = model.expand_coarsened_dag(fully_connected=True)
+                score_value = float(gnies_score_class.full_score(expanded_adj))
+            else:
+                score_value = float(model.chain_gaussian_score(chain_datasets))
+            model.score = score_value
             row = dict(
                 alpha=float(alpha),
                 beta=float(beta),
                 ari=ari,
-                score=gnies_value,
+                score=score_value,
                 fit_time=fit_time,
                 num_parts=model.dag.number_of_nodes(),
                 num_edges=model.dag.number_of_edges(),
@@ -343,8 +356,8 @@ def run_repare_grid(
     df = pd.DataFrame(records)
     if not records:
         raise RuntimeError("No RePaRe models were fitted.")
-    score_row = min(records, key=lambda r: (r["score"]))
-    oracle_row = max(records, key=lambda r: (r["ari"], r["f1"], r["precision"]))
+    score_row = min(records, key=lambda r: (r["score"], -r["ari"], -r["f1"], -r["precision"]))
+    oracle_row = max(records, key=lambda r: (r["ari"], r["f1"], r["precision"], -r["score"]))
     score_model = models[(score_row["alpha"], score_row["beta"])]
     oracle_model = models[(oracle_row["alpha"], oracle_row["beta"])]
     return df, score_model, oracle_model, score_row, oracle_row
@@ -489,6 +502,7 @@ def main():
     ut_alphas = snakemake.params.ut_alphas
     target_mode = getattr(snakemake.params, "target_mode", "default")
     include_grouped = getattr(snakemake.params, "include_grouped", True)
+    score_mode = getattr(snakemake.params, "score_mode", "gnies").lower()
     single_target_map = TARGET_MODE_MAP.get(target_mode, DEFAULT_SINGLE_TARGET_EXPERIMENTS)
     grid_dir = getattr(snakemake.output, "grid_dir", None)
     grid_root = ensure_clean_dir(Path(grid_dir)) if grid_dir else None
@@ -519,6 +533,7 @@ def main():
             betas,
             grid_root=grid_root,
             feature_cols=feature_cols,
+            score_mode=score_mode,
         )
         save_dag_plot(score_model, feature_cols, snakemake.output.dag)
         score_parts, score_edges = labeled_summary(score_model, feature_cols)
@@ -566,6 +581,7 @@ def main():
         betas,
         grid_root=None,
         feature_cols=feature_cols,
+        score_mode=score_mode,
     )
     untranslated = [
         ("score", ungrouped_score_model, ungrouped_score_params),

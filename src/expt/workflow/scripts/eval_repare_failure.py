@@ -1,3 +1,4 @@
+import json
 import pickle
 
 import networkx as nx
@@ -6,24 +7,21 @@ import pandas as pd
 from repare.repare import _get_totally_ordered_partition
 from sklearn.metrics import adjusted_rand_score
 
-density = float(snakemake.wildcards.density)
-samp_size = int(snakemake.wildcards.samp_size)
-seed = int(snakemake.wildcards.seed)
 model = pickle.load(open(snakemake.input.model, "rb"))
-data = np.load(
-    snakemake.input.data,
-    allow_pickle=True,
-)
+data = np.load(snakemake.input.data, allow_pickle=True)
+with open(snakemake.input.fit_metadata, "r", encoding="utf-8") as f:
+    fit_metadata = json.load(f)
+
 weights = data["weights"]
 targets = data["targets"]
+graph_family = str(data["graph_family"])
+edge_probability = float(data["edge_probability"])
+num_nodes = int(data["num_nodes"])
+num_intervs = int(data["num_intervs"])
+samp_size = int(data["samp_size"])
+seed = int(data["seed"])
 
 true_dag = nx.DiGraph(weights.astype(bool))
-num_nodes = true_dag.number_of_nodes()
-num_intervs = targets.shape[0]
-if "graph_family" in data:
-    graph_family = str(data["graph_family"].item())
-else:
-    graph_family = "erdos_renyi"
 
 target_des_masks = {}
 for idx, target in enumerate(targets):
@@ -37,16 +35,18 @@ true_partition = _get_totally_ordered_partition(ordered_masks)
 true_labels = np.zeros(num_nodes, dtype=int)
 for label, part in enumerate(true_partition):
     true_labels[list(part)] = label
-est_labels = np.zeros(len(true_dag))
+
+est_labels = np.zeros(num_nodes, dtype=int)
 for label, part in enumerate(model.dag.nodes):
     est_labels[list(part)] = label
-ar_index = adjusted_rand_score(true_labels, est_labels)
+
+ari = adjusted_rand_score(true_labels, est_labels)
 
 
-def _is_adj(pa, ch):
-    for atom in pa:
-        for chatom in ch:
-            if true_dag.has_edge(atom, chatom):
+def _is_adj(pas, chs):
+    for pa in pas:
+        for ch in chs:
+            if true_dag.has_edge(pa, ch):
                 return True
     return False
 
@@ -61,37 +61,32 @@ for idx, pa in enumerate(node_list[:-1]):
 true_positive = sum(
     (1 for edge in model.dag.edges if edge in true_edge_est_partition.edges)
 )
+precision = true_positive / len(model.dag.edges) if model.dag.edges else 1
+recall = (
+    true_positive / len(true_edge_est_partition.edges)
+    if true_edge_est_partition.edges
+    else 1
+)
 try:
-    precision = true_positive / len(model.dag.edges)
+    fscore = 2 * (precision * recall) / (precision + recall)
 except ZeroDivisionError:
-    precision = 1
-try:
-    recall = true_positive / len(true_edge_est_partition.edges)
-except ZeroDivisionError:
-    recall = 1
-try:
-    f_score = 2 * (precision * recall) / (precision + recall)
-except ZeroDivisionError:
-    f_score = 0
-
-method_label = getattr(snakemake.params, "method_label", "RePaRe")
-metric_type = getattr(snakemake.params, "metric_type", "partition")
-
+    fscore = 0
 
 results = {
-    "density": density,
-    "samp_size": samp_size,
-    "seed": seed,
-    "num_nodes": num_nodes,
-    "num_intervs": num_intervs,
     "graph_family": graph_family,
-    "method": method_label,
-    "metric_type": metric_type,
+    "edge_probability": edge_probability,
+    "num_nodes": num_nodes,
+    "samp_size": samp_size,
+    "num_intervs": num_intervs,
+    "seed": seed,
+    "method": snakemake.params.method,
+    "method_label": snakemake.params.method_label,
     "precision": precision,
     "recall": recall,
-    "fscore": f_score,
-    "ari": ar_index,
-    "runtime_sec": float(getattr(model, "fit_runtime_sec", np.nan)),
+    "fscore": fscore,
+    "ari": ari,
+    "runtime_sec": float(fit_metadata.get("runtime_sec", np.nan)),
     "score": float(getattr(model, "score", np.nan)),
 }
-pd.DataFrame([results]).to_csv(snakemake.output[0], index=False)
+
+pd.DataFrame([results]).to_csv(snakemake.output.metrics, index=False)

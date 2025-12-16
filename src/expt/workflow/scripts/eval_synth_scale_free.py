@@ -6,24 +6,17 @@ import pandas as pd
 from repare.repare import _get_totally_ordered_partition
 from sklearn.metrics import adjusted_rand_score
 
+
 density = float(snakemake.wildcards.density)
 samp_size = int(snakemake.wildcards.samp_size)
 seed = int(snakemake.wildcards.seed)
 model = pickle.load(open(snakemake.input.model, "rb"))
-data = np.load(
-    snakemake.input.data,
-    allow_pickle=True,
-)
+data = np.load(snakemake.input.data, allow_pickle=True)
 weights = data["weights"]
 targets = data["targets"]
 
 true_dag = nx.DiGraph(weights.astype(bool))
 num_nodes = true_dag.number_of_nodes()
-num_intervs = targets.shape[0]
-if "graph_family" in data:
-    graph_family = str(data["graph_family"].item())
-else:
-    graph_family = "erdos_renyi"
 
 target_des_masks = {}
 for idx, target in enumerate(targets):
@@ -51,6 +44,17 @@ def _is_adj(pa, ch):
     return False
 
 
+def _metadata(key, default):
+    if key in data.files:
+        return data[key].item() if np.ndim(data[key]) == 0 else data[key]
+    return default
+
+
+graph_family = str(_metadata("graph_family", "scale_free"))
+actual_density = float(_metadata("actual_density", float(weights.astype(bool).sum()) / (num_nodes * (num_nodes - 1)) if num_nodes > 1 else 0.0))
+ba_m = int(_metadata("ba_m", 1))
+num_edges = int(weights.astype(bool).sum())
+
 true_edge_est_partition = nx.create_empty_copy(model.dag)
 node_list = list(true_edge_est_partition.nodes)
 for idx, pa in enumerate(node_list[:-1]):
@@ -74,24 +78,17 @@ try:
 except ZeroDivisionError:
     f_score = 0
 
-method_label = getattr(snakemake.params, "method_label", "RePaRe")
-metric_type = getattr(snakemake.params, "metric_type", "partition")
-
-
 results = {
     "density": density,
     "samp_size": samp_size,
     "seed": seed,
-    "num_nodes": num_nodes,
-    "num_intervs": num_intervs,
-    "graph_family": graph_family,
-    "method": method_label,
-    "metric_type": metric_type,
-    "precision": precision,
-    "recall": recall,
     "fscore": f_score,
     "ari": ar_index,
     "runtime_sec": float(getattr(model, "fit_runtime_sec", np.nan)),
     "score": float(getattr(model, "score", np.nan)),
+    "graph_family": graph_family,
+    "actual_density": actual_density,
+    "num_edges": num_edges,
+    "ba_m": ba_m,
 }
 pd.DataFrame([results]).to_csv(snakemake.output[0], index=False)
