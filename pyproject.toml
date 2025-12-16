@@ -21,6 +21,7 @@ packages = ["src/repare"]
 
 [dependency-groups]
 dev = [
+    "causaldag>=0.1a163",
     "gies>=0.0.3",
     "gnies>=0.3.3",
     "pytest>=8.3.4",
