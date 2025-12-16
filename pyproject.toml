@@ -21,6 +21,8 @@ packages = ["src/repare"]
 
 [dependency-groups]
 dev = [
+    "gies>=0.0.3",
+    "gnies>=0.3.3",
     "pytest>=8.3.4",
     "rpy2~=3.4.1",
     "seaborn>=0.13.2",

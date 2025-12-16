@@ -317,6 +317,30 @@ wheels = [
 ]
 
 [[package]]
+name = "ges"
+version = "1.1.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/68/7f/a8cf2ac17c1aadb1388f2008daeeea82437e1e5cd9c062b1605c3200e154/ges-1.1.1.tar.gz", hash = "sha256:2c04122a49a8ced6f021945d7b2ecb987e9ddcc92051afd311e1a59a385ceb96", size = 41644, upload-time = "2025-03-03T10:01:58.415Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/da/bd/bd576500a0115a99f1b4afcfe05aef331ff40da95f1e8aa9522b9a7e16c8/ges-1.1.1-py3-none-any.whl", hash = "sha256:5b2f1c9560de76c96bcfc53a04cbbef20e4ca3be0f422a023e87af353dbbfa64", size = 47335, upload-time = "2025-03-03T10:01:54.878Z" },
+]
+
+[[package]]
+name = "gies"
+version = "0.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/84/6c/1133ce40b4ded357808e848f737ab33c16e414e0ff29409f1c17fcd0d24a/gies-0.0.3.tar.gz", hash = "sha256:35b72d4ebb92066b630dea6a885bbe22ff3cb087c645ca00eab4e784e1309879", size = 48865, upload-time = "2025-03-03T10:26:55.591Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/24/0c/6428fb34aa83858b9404149920fed39ea1bac0085d74ce8b0eabbcc85232/gies-0.0.3-py3-none-any.whl", hash = "sha256:4599d97d420efb0c4affaeeb52cf5db98cce11ffceef8edb941f967bbc621074", size = 70630, upload-time = "2025-03-03T10:26:53.345Z" },
+]
+
+[[package]]
 name = "gitdb"
 version = "4.0.12"
 source = { registry = "https://pypi.org/simple" }
@@ -338,6 +362,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/9a/c8/dd58967d119baab745caec2f9d853297cec1989ec1d63f677d3880632b88/gitpython-3.1.45.tar.gz", hash = "sha256:85b0ee964ceddf211c41b9f27a49086010a190fd8132a24e21f362a4b36a791c", size = 215076, upload-time = "2025-07-24T03:45:54.871Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/01/61/d4b89fec821f72385526e1b9d9a3a0385dda4a72b206d28049e2c7cd39b8/gitpython-3.1.45-py3-none-any.whl", hash = "sha256:8908cb2e02fb3b93b7eb0f2827125cb699869470432cc885f019b8fd0fccff77", size = 208168, upload-time = "2025-07-24T03:45:52.517Z" },
+]
+
+[[package]]
+name = "gnies"
+version = "0.3.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "ges" },
+    { name = "numpy" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/94/46/18d60d1b6472fc4f1cb53270d6e2e5a556efa44f1fac1a0d92612ed37fd0/gnies-0.3.3.tar.gz", hash = "sha256:3e8e4b2a31ff804cfe701901de291038c2b7d22938fb94b142f9f7f359991c60", size = 33561, upload-time = "2024-06-23T10:02:46.887Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1d/30/12c1b5ba8094078e000b05bc45efc495e51f073c103e6341ad3ec8546c45/gnies-0.3.3-py3-none-any.whl", hash = "sha256:15ded05377d459e9256e48df7477ffebc9281407a820f15f500f311ebd870b41", size = 43208, upload-time = "2024-06-23T10:02:40.437Z" },
 ]
 
 [[package]]
@@ -945,6 +982,8 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "gies" },
+    { name = "gnies" },
     { name = "pytest" },
     { name = "rpy2" },
     { name = "seaborn" },
@@ -964,6 +1003,8 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "gies", specifier = ">=0.0.3" },
+    { name = "gnies", specifier = ">=0.3.3" },
     { name = "pytest", specifier = ">=8.3.4" },
     { name = "rpy2", specifier = "~=3.4.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
