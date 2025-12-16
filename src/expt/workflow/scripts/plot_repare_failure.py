@@ -5,9 +5,22 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
+FONT_SIZE = 16
+
+sns.set_context("paper", font_scale=1)
+plt.rcParams.update(
+    {
+        "axes.titlesize": FONT_SIZE,
+        "axes.labelsize": FONT_SIZE,
+        "xtick.labelsize": FONT_SIZE,
+        "ytick.labelsize": FONT_SIZE,
+        "legend.fontsize": FONT_SIZE,
+        "legend.title_fontsize": FONT_SIZE,
+    }
+)
+
 
 def _style_generator():
-    sns.set_context("paper", font_scale=2)
     #colors = sns.color_palette("colorblind")
     colors = sns.color_palette("ch:s=-.2,r=.6", n_colors=10)
 
@@ -113,8 +126,8 @@ axes[1].legend(
     title="node count",
     loc="upper left",
     frameon=True,
-    fontsize=12,         # legend text smaller
-    title_fontsize=13,
+    fontsize=FONT_SIZE,
+    title_fontsize=FONT_SIZE,
     #bbox_to_anchor=(0.5, -0.25),
     #ncol=len(node_levels),
     ncol = 1
@@ -150,7 +163,9 @@ ax.legend(
     loc="upper center",
     #bbox_to_anchor=(0.5, -0.15),
     #ncol=len(sample_levels),
-    ncol=1
+    ncol=1,
+    fontsize=FONT_SIZE,
+    title_fontsize=FONT_SIZE,
 )
 
 fig2.tight_layout()
