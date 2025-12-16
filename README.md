@@ -11,7 +11,7 @@ Dependencies, versioning, and installation can all be handled by `uv`, with the 
 
 After [installing uv](https://docs.astral.sh/uv/getting-started/):
 - `uv run pytest tests/` can be run as a quick check from project root
-- `uv run snakemake results/ari_num_intervs_2.pdf --cores all` can be run from `src/expt/` to reproduce Figure 1(a); it runs 330 experiments, taking about 10 minutes depending on the cpu.
+- `uv run snakemake results/ari_num_intervs_2.pdf --cores all` can be run from `src/expt/` to reproduce Figures 1(a,d); it runs 330 experiments, taking about 10 minutes depending on the cpu.
 - `uv run snakemake all --cores all` can be run from `src/expt/` to reproduce all experiments; it takes less than an hour, depending on cpu, and the first call will download the third-party `causalchambers` dataset.
 
 The first time `uv run..` is called, it will download and install all dependencies.
