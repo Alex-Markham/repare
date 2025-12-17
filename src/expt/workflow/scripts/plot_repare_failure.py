@@ -1,7 +1,6 @@
 import itertools
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sns
 
@@ -16,12 +15,14 @@ plt.rcParams.update(
         "ytick.labelsize": FONT_SIZE,
         "legend.fontsize": FONT_SIZE,
         "legend.title_fontsize": FONT_SIZE,
+        "lines.linewidth": 3,  # default line width
+        "lines.markersize": 10.0,  # default marker size (points)
     }
 )
 
 
 def _style_generator():
-    #colors = sns.color_palette("colorblind")
+    # colors = sns.color_palette("colorblind")
     colors = sns.color_palette("ch:s=-.2,r=.6", n_colors=10)
 
     markers = ["o", "s", "^", "D", "P", "X", "v", ">", "<", "*"]
@@ -71,8 +72,9 @@ stats_cols = {"ari_mean", "runtime_mean"}
 if stats_cols.issubset(df.columns):
     agg = (
         df.sort_values(["num_nodes", "samp_size"])
-        .drop_duplicates(["num_nodes", "samp_size"], keep="last")
-        [["num_nodes", "samp_size", "ari_mean", "runtime_mean"]]
+        .drop_duplicates(["num_nodes", "samp_size"], keep="last")[
+            ["num_nodes", "samp_size", "ari_mean", "runtime_mean"]
+        ]
         .sort_values("samp_size")
     )
 else:
@@ -114,13 +116,13 @@ axes[0].set_xscale("log")
 axes[1].set_xscale("log")
 axes[1].set_yscale("log")
 axes[0].set_ylim(0, 1)
-axes[0].set_xlabel("sample size")
+axes[0].set_xlabel("sample size (n)")
 axes[0].set_ylabel("ARI ↑")
-axes[1].set_xlabel("sample size")
-axes[1].set_ylabel("runtime (s, log) ↓")
+axes[1].set_xlabel("sample size (n)")
+axes[1].set_ylabel("run time (s)")
 
-axes[0].grid(True, which="both", linestyle="--", alpha=0.4)
-axes[1].grid(True, which="both", linestyle="--", alpha=0.4)
+axes[0].grid(False)
+axes[1].grid(False)
 node_levels = agg["num_nodes"].unique()
 axes[1].legend(
     title="node count",
@@ -128,9 +130,9 @@ axes[1].legend(
     frameon=True,
     fontsize=FONT_SIZE,
     title_fontsize=FONT_SIZE,
-    #bbox_to_anchor=(0.5, -0.25),
-    #ncol=len(node_levels),
-    ncol = 1
+    # bbox_to_anchor=(0.5, -0.25),
+    # ncol=len(node_levels),
+    ncol=1,
 )
 
 fig.tight_layout()
@@ -153,16 +155,16 @@ for samp_idx, (samp_size, subset) in enumerate(runtime_vs_nodes.groupby("samp_si
         label=f"m={samp_size}",
     )
 
-ax.set_xlabel("node count")
-ax.set_ylabel("runtime (s, log) ↓")
+ax.set_xlabel("node count (d)")
+ax.set_ylabel("runtime (s)")
 ax.set_yscale("log")
-ax.grid(True, linestyle="--", alpha=0.4)
+ax.grid(False)
 sample_levels = runtime_vs_nodes["samp_size"].unique()
 ax.legend(
-    title="sample size",
+    title="sample size (n)",
     loc="upper center",
-    #bbox_to_anchor=(0.5, -0.15),
-    #ncol=len(sample_levels),
+    # bbox_to_anchor=(0.5, -0.15),
+    # ncol=len(sample_levels),
     ncol=1,
     fontsize=FONT_SIZE,
     title_fontsize=FONT_SIZE,

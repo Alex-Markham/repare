@@ -2,19 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-FONT_SIZE = 16
-
-sns.set_context("paper", font_scale=1)
-plt.rcParams.update(
-    {
-        "axes.titlesize": FONT_SIZE,
-        "axes.labelsize": FONT_SIZE,
-        "xtick.labelsize": FONT_SIZE,
-        "ytick.labelsize": FONT_SIZE,
-        "legend.fontsize": FONT_SIZE,
-        "legend.title_fontsize": FONT_SIZE,
-    }
-)
+sns.set_context("paper", font_scale=2.3)
 
 results_df = pd.read_csv(snakemake.input[0])
 
@@ -32,10 +20,10 @@ fplot = sns.lineplot(
 plt.xscale("log")
 plt.ylim(0, 1)
 plt.ylabel("F-score ↑")
-plt.xlabel("Sample Size (log)")
-plt.legend(title="density", fontsize=FONT_SIZE, title_fontsize=FONT_SIZE)
+plt.xlabel("sample size (n)")
+plt.legend(title="density")
 plt.tight_layout()
-plt.savefig(snakemake.output[0])
+plt.savefig(snakemake.output[0], bbox_inches="tight", pad_inches=0.02)
 
 
 # ARI plot
@@ -51,8 +39,8 @@ ariplot = sns.lineplot(
 )
 plt.xscale("log")
 plt.ylim(0, 1)
-plt.ylabel("adjusted Rand index ↑")
-plt.xlabel("Sample Size (log)")
-plt.legend(title="density", fontsize=FONT_SIZE, title_fontsize=FONT_SIZE)
+plt.ylabel("ARI ↑")
+plt.xlabel("sample size (n)")
+plt.legend(title="density")
 plt.tight_layout()
-plt.savefig(snakemake.output[1])
+plt.savefig(snakemake.output[1], bbox_inches="tight", pad_inches=0.02)
