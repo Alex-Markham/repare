@@ -70,10 +70,16 @@ rule plot_synth_scale_free:
         "results/scale_free/fscores_num_intervs_{num_intervs}.pdf",
         "results/scale_free/ari_num_intervs_{num_intervs}.pdf",
     script:
-        "../scripts/plot_synth_scale_free.py"
+        "../scripts/plot_synth.py"
 
 
 rule scale_free_all:
     input:
-        expand("results/scale_free/fscores_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
-        expand("results/scale_free/ari_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8])
+        expand(
+            "results/scale_free/fscores_num_intervs_{num_intervs}.pdf",
+            num_intervs=[2, 5, 8],
+        ),
+        expand(
+            "results/scale_free/ari_num_intervs_{num_intervs}.pdf",
+            num_intervs=[2, 5, 8],
+        ),
