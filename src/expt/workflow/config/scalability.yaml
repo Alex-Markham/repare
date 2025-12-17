@@ -1,0 +1,15 @@
+graph_family: erdos_renyi
+edge_probability: 0.3
+num_intervs: 5
+intervention_type: soft
+num_nodes: [10, 20, 40, 80, 120]
+sample_sizes: [50, 100, 200, 500, 1000, 5000]
+seeds: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+methods:
+  RePaRe:
+    label: RePaRe
+    alpha: 0.0001
+    beta: 0.0001
+    assume: gaussian
+    refine_test: ttest
+    intervention_type: soft

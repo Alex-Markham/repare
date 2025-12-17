@@ -3,7 +3,7 @@ import yaml
 from snakemake.io import directory
 
 WORKFLOW_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(WORKFLOW_DIR, "config/repare_failure.yaml")
+CONFIG_PATH = os.path.join(WORKFLOW_DIR, "config/scalability.yaml")
 with open(CONFIG_PATH, "r", encoding="utf-8") as _cfg:
     config = yaml.safe_load(_cfg)
 
@@ -20,41 +20,41 @@ METHOD_NAMES = list(METHODS.keys())
 
 def _dataset_path(w):
     return (
-        f"results/repare_failure/data/graph={GRAPH_FAMILY}_p={EDGE_PROB}"
+        f"results/scalability/data/graph={GRAPH_FAMILY}_p={EDGE_PROB}"
         f"/num_nodes={w.num_nodes}/samp_size={w.samp_size}/seed={w.seed}/dataset.npz"
     )
 
 
 def _model_path(w):
     return (
-        f"results/repare_failure/models/{w.method}/graph={GRAPH_FAMILY}_p={EDGE_PROB}"
+        f"results/scalability/models/{w.method}/graph={GRAPH_FAMILY}_p={EDGE_PROB}"
         f"/num_nodes={w.num_nodes}/samp_size={w.samp_size}/seed={w.seed}/model.pkl"
     )
 
 
 def _fit_metadata_path(w):
     return (
-        f"results/repare_failure/models/{w.method}/graph={GRAPH_FAMILY}_p={EDGE_PROB}"
+        f"results/scalability/models/{w.method}/graph={GRAPH_FAMILY}_p={EDGE_PROB}"
         f"/num_nodes={w.num_nodes}/samp_size={w.samp_size}/seed={w.seed}/fit_metadata.json"
     )
 
 
 def _metrics_path(w):
     return (
-        f"results/repare_failure/metrics/{w.method}/graph={GRAPH_FAMILY}_p={EDGE_PROB}"
+        f"results/scalability/metrics/{w.method}/graph={GRAPH_FAMILY}_p={EDGE_PROB}"
         f"/num_nodes={w.num_nodes}/samp_size={w.samp_size}/seed={w.seed}/metrics.csv"
     )
 
 
 def _aggregated_path(w):
     return (
-        f"results/repare_failure/aggregated/{w.method}_graph={GRAPH_FAMILY}_p={EDGE_PROB}.csv"
+        f"results/scalability/aggregated/{w.method}_graph={GRAPH_FAMILY}_p={EDGE_PROB}.csv"
     )
 
 
 def _plot_path(w):
     return (
-        f"results/repare_failure/plots/{w.method}_graph={GRAPH_FAMILY}_p={EDGE_PROB}.pdf"
+        f"results/scalability/plots/{w.method}_graph={GRAPH_FAMILY}_p={EDGE_PROB}.pdf"
     )
 
 
@@ -63,7 +63,7 @@ rule all:
         expand(_plot_path, method=METHOD_NAMES),
 
 
-rule generate_repare_failure_data:
+rule generate_scalability_data:
     output:
         dataset=_dataset_path,
     params:
@@ -72,10 +72,10 @@ rule generate_repare_failure_data:
         edge_probability=EDGE_PROB,
         intervention_type=INTERVENTION_TYPE,
     script:
-        "scripts/gen_repare_failure.py"
+        "scripts/gen_scalability.py"
 
 
-rule fit_repare_failure_model:
+rule fit_scalability_model:
     input:
         data=_dataset_path,
     output:
@@ -85,10 +85,10 @@ rule fit_repare_failure_model:
         method=lambda wildcards: wildcards.method,
         method_config=lambda wildcards: METHODS[wildcards.method],
     script:
-        "scripts/fit_repare_failure.py"
+        "scripts/fit_scalability.py"
 
 
-rule eval_repare_failure_model:
+rule eval_scalability_model:
     input:
         data=_dataset_path,
         model=_model_path,
@@ -101,10 +101,10 @@ rule eval_repare_failure_model:
             "label", wildcards.method
         ),
     script:
-        "scripts/eval_repare_failure.py"
+        "scripts/eval_scalability.py"
 
 
-rule aggregate_repare_failure_metrics:
+rule aggregate_scalability_metrics:
     input:
         lambda wildcards: expand(
             _metrics_path,
@@ -118,10 +118,10 @@ rule aggregate_repare_failure_metrics:
     params:
         method=lambda wildcards: wildcards.method,
     script:
-        "scripts/aggregate_repare_failure.py"
+        "scripts/aggregate_scalability.py"
 
 
-rule plot_repare_failure:
+rule plot_scalability:
     input:
         summary=_aggregated_path,
     output:
@@ -132,4 +132,4 @@ rule plot_repare_failure:
             "label", wildcards.method
         ),
     script:
-        "scripts/plot_repare_failure.py"
+        "scripts/plot_scalability.py"
