@@ -1,0 +1,3 @@
+plot_existing_summary:
+  summary: results/scalability/summary/graph=erdos_renyi_edge_prob=0.15_method=RePaRe.csv
+  label: "RePaRe (p=0.15)"

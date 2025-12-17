@@ -1,8 +1,9 @@
 from snakemake.io import directory
 
-
 include: "rules/synth.smk"
+include: "rules/synth_scale_free.smk"
 include: "rules/causalchamber.smk"
+include: "rules/scalability.smk"
 
 
 rule all:

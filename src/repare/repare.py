@@ -308,12 +308,26 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         test_p = float(max(p_values))
         return test_p <= self.beta
 
-    def expand_coarsened_dag(self):
-        """Expand the coarse partition DAG into a full adjacency matrix."""
+    def expand_coarsened_dag(self, fully_connected=False):
+        """Expand the coarse partition DAG into a full adjacency matrix.
+
+        Parameters
+        ----------
+        fully_connected : bool, default=False
+            When True, connect every part internally according to the
+            part ordering (i.e., each part becomes a fully connected DAG).
+        """
         if not hasattr(self, "obs"):
             raise ValueError("Observational data must be provided before expansion.")
         num_features = self.obs.shape[1]
         adjacency = np.zeros((num_features, num_features), dtype=int)
+
+        if fully_connected:
+            for part in self.dag.nodes:
+                ordered = sorted(part)
+                for idx, src in enumerate(ordered):
+                    for dst in ordered[idx + 1 :]:
+                        adjacency[src, dst] = 1
 
         for src_part, dst_part in self.dag.edges:
             for src in src_part:
@@ -321,6 +335,71 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                     adjacency[src, dst] = 1
 
         return adjacency
+
+    def chain_gaussian_score(self, datasets):
+        """Negative log-likelihood under the Gaussian AMP chain-graph model.
+
+        Parameters
+        ----------
+        datasets : iterable of array-like
+            Each element is (n_samples, num_features). All datasets must share the
+            same feature dimension/order used during fitting.
+
+        Returns
+        -------
+        float
+            Negative log-likelihood summed over datasets and parts (lower is better).
+        """
+
+        if not hasattr(self, "obs"):
+            raise ValueError("Model must be fit before scoring.")
+        nodes = list(nx.topological_sort(self.dag))
+        if not nodes:
+            return 0.0
+
+        loglik = 0.0
+        for data in datasets:
+            arr = np.asarray(data, dtype=float)
+            if arr.ndim != 2 or arr.shape[1] != self.obs.shape[1]:
+                raise ValueError("Dataset feature dimension mismatch.")
+            if arr.shape[0] == 0:
+                continue
+            centered = arr - arr.mean(axis=0, keepdims=True)
+            cov = centered.T @ centered / float(centered.shape[0])
+            n = centered.shape[0]
+
+            for part in nodes:
+                part_idx = sorted(part)
+                parents = list(self.dag.predecessors(part))
+                parent_atoms = sorted({atom for pa in parents for atom in pa})
+
+                Scc = cov[np.ix_(part_idx, part_idx)]
+                if parent_atoms:
+                    Spp = cov[np.ix_(parent_atoms, parent_atoms)]
+                    Scp = cov[np.ix_(part_idx, parent_atoms)]
+                    Spc = Scp.T
+                    inv_Spp = np.linalg.pinv(Spp)
+                    beta = Scp @ inv_Spp
+                    residual = (
+                        Scc
+                        - beta @ Spc
+                        - Scp @ beta.T
+                        + beta @ Spp @ beta.T
+                    )
+                else:
+                    residual = Scc.copy()
+
+                residual = 0.5 * (residual + residual.T)
+                omega = np.linalg.pinv(residual)
+                sign, invlogdet = np.linalg.slogdet(omega)
+                if sign <= 0:
+                    raise np.linalg.LinAlgError("Residual covariance not positive definite.")
+                
+                block_dim = len(part_idx)
+                loglik += 0.5 * n * (invlogdet - block_dim)
+
+        # Return negative log-likelihood so lower is better (for existing selection logic).
+        return float(-loglik)
 
 
 def _get_totally_ordered_partition(ivn_biadj):
