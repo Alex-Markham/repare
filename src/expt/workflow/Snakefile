@@ -1,5 +1,6 @@
 from snakemake.io import directory
 
+
 include: "rules/synth.smk"
 include: "rules/synth_scale_free.smk"
 include: "rules/causalchamber.smk"
@@ -10,6 +11,14 @@ rule all:
     input:
         expand("results/fscores_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
         expand("results/ari_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
+        expand(
+            "results/scale_free/fscores_num_intervs_{num_intervs}.pdf",
+            num_intervs=[2, 5, 8],
+        ),
+        expand(
+            "results/scale_free/ari_num_intervs_{num_intervs}.pdf",
+            num_intervs=[2, 5, 8],
+        ),
         "results/causalchamber/dag.png",
         "results/causalchamber/dag_summary.txt",
         "results/causalchamber/grid_metrics.csv",
