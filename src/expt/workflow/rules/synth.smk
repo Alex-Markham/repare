@@ -76,4 +76,4 @@ rule plot_synth:
 rule synth_all:
     input:
         expand("results/fscores_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
-        expand("results/ari_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8])
+        expand("results/ari_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),

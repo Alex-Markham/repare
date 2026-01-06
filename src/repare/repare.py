@@ -1,4 +1,5 @@
 from collections import deque
+import itertools
 
 import dcor
 import networkx as nx
@@ -239,24 +240,53 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             self.refinable.append(v)
         return to_refine, u, v
 
-    def _is_adj(self, pa, ch):
+    def _recurse(self,):
+        to_refine, u, v = self._refine()
+        if not u or not v:
+            return
+        self.dag.add_node(tuple(u))
+        self.dag.add_node(tuple(v))
+        if self._is_adj(u, v, self.dag.predecessors(tuple(to_refine))):
+            self.dag.add_edge(tuple(u), tuple(v))
+        for pa in self.dag.predecessors(tuple(to_refine)):
+            for ch in (u, v):
+                conditioning_set = (c for c in self.dag.predecessors(tuple(to_refine)) if c != pa)
+                if ch == v:
+                    conditioning_set = itertools.chain(conditioning_set, (u,))
+                if self._is_adj(set(pa), ch, conditioning_set):
+                    self.dag.add_edge(pa, tuple(ch))
+        for pa in (u, v):
+            for ch in self.dag.successors(tuple(to_refine)):
+                conditioning_set = (c for c in self.dag.predecessors(tuple(to_refine)) if c != pa)
+                if self._is_adj(pa, set(ch), conditioning_set):
+                    self.dag.add_edge(tuple(pa), ch)
+        self.dag.remove_node(tuple(to_refine))
+
+    def _is_adj(self, pa, ch, conditioning_set=None):
+        # Flatten conditioning set indices
+        z_indices = []
+        if conditioning_set:
+            for part in conditioning_set:
+                z_indices.extend(part)
+        z_indices = sorted(list(set(z_indices)))
+
         if self.assume is None:
 
-            def p_val(x, y):
+            def p_val(x, y, z=None):
                 test_result = dcor.independence.distance_correlation_t_test(x, y)
                 return test_result.pvalue
 
-        if self.assume == "gaussian":
+        elif self.assume == "gaussian":
 
-            def p_val(x, y):
+            def p_val(x, y, z=None):
                 try:
-                    cca = SimpleCanCorr(x, y)
+                    cca = SimpleCanCorr(x, y, Z=z)
                     result = cca.wilks_lambda_test()
                     return result.loc[0, "Pr > F"]
                 except (ValueError, np.linalg.LinAlgError):
                     return 1.0
 
-        if self.assume == "discrete":
+        elif self.assume == "discrete":
             """For paired samples X (n×p) and Y (n×q) where both are
             discrete (categorical), give a concise Python function
             that tests independence parametrically: encode
@@ -291,7 +321,12 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                 x = x[:, None]
             if y.ndim == 1:
                 y = y[:, None]
-            p_values.append(p_val(x, y))
+                
+            z = None
+            if z_indices:
+                z = env[:, z_indices]
+            
+            p_values.append(p_val(x, y, z=z))
 
         if not p_values:
             self.edge_tests.append(
