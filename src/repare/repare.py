@@ -1,4 +1,5 @@
 from collections import deque
+import itertools
 
 import dcor
 import networkx as nx
@@ -262,23 +263,30 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         self.dag.remove_node(tuple(to_refine))
 
     def _is_adj(self, pa, ch, conditioning_set=None):
+        # Flatten conditioning set indices
+        z_indices = []
+        if conditioning_set:
+            for part in conditioning_set:
+                z_indices.extend(part)
+        z_indices = sorted(list(set(z_indices)))
+
         if self.assume is None:
 
-            def p_val(x, y):
+            def p_val(x, y, z=None):
                 test_result = dcor.independence.distance_correlation_t_test(x, y)
                 return test_result.pvalue
 
-        if self.assume == "gaussian":
+        elif self.assume == "gaussian":
 
-            def p_val(x, y):
+            def p_val(x, y, z=None):
                 try:
-                    cca = SimpleCanCorr(x, y, conditioning_set)
+                    cca = SimpleCanCorr(x, y, Z=z)
                     result = cca.wilks_lambda_test()
                     return result.loc[0, "Pr > F"]
                 except (ValueError, np.linalg.LinAlgError):
                     return 1.0
 
-        if self.assume == "discrete":
+        elif self.assume == "discrete":
             """For paired samples X (n×p) and Y (n×q) where both are
             discrete (categorical), give a concise Python function
             that tests independence parametrically: encode
@@ -313,7 +321,12 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                 x = x[:, None]
             if y.ndim == 1:
                 y = y[:, None]
-            p_values.append(p_val(x, y))
+                
+            z = None
+            if z_indices:
+                z = env[:, z_indices]
+            
+            p_values.append(p_val(x, y, z=z))
 
         if not p_values:
             self.edge_tests.append(
