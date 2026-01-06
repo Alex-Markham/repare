@@ -5,7 +5,7 @@ from scipy.stats import f
 
 
 class SimpleCanCorr:
-    def __init__(self, X, Y, tol=1e-8):
+    def __init__(self, X, Y, Z=None, tol=1e-8):
         if X.ndim == 1:
             X = X[:, None]
         if Y.ndim == 1:
@@ -13,12 +13,30 @@ class SimpleCanCorr:
         if X.shape[0] != Y.shape[0]:
             raise ValueError("X and Y must have the same number of rows (observations)")
 
-        self.nobs, self.kx = X.shape
-        _, self.ky = Y.shape
-
-        # Center
+        # Center X and Y
         X = X - X.mean(0)
         Y = Y - Y.mean(0)
+
+        # Handle Z (Conditioning set)
+        kz = 0
+        if Z is not None:
+            if Z.ndim == 1:
+                Z = Z[:, None]
+            if Z.shape[0] != X.shape[0]:
+                raise ValueError("Z must have the same number of rows as X and Y")
+            
+            # Center Z
+            Z = Z - Z.mean(0)
+            kz = Z.shape[1]
+
+            # Residualize X and Y on Z
+            Q, _ = np.linalg.qr(Z)
+            X = X - Q @ (Q.T @ X)
+            Y = Y - Q @ (Q.T @ Y)
+
+        self.nobs = X.shape[0] - kz
+        self.kx = X.shape[1]
+        _, self.ky = Y.shape
 
         # Compute SVDs
         Ux, sx, Vx = svd(X, full_matrices=False)

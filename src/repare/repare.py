@@ -239,7 +239,29 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             self.refinable.append(v)
         return to_refine, u, v
 
-    def _is_adj(self, pa, ch):
+    def _recurse(self,):
+        to_refine, u, v = self._refine()
+        if not u or not v:
+            return
+        self.dag.add_node(tuple(u))
+        self.dag.add_node(tuple(v))
+        if self._is_adj(u, v, self.dag.predecessors(tuple(to_refine))):
+            self.dag.add_edge(tuple(u), tuple(v))
+        for pa in self.dag.predecessors(tuple(to_refine)):
+            for ch in (u, v):
+                conditioning_set = (c for c in self.dag.predecessors(tuple(to_refine)) if c != pa)
+                if ch == v:
+                    conditioning_set = itertools.chain(conditioning_set, (u,))
+                if self._is_adj(set(pa), ch, conditioning_set):
+                    self.dag.add_edge(pa, tuple(ch))
+        for pa in (u, v):
+            for ch in self.dag.successors(tuple(to_refine)):
+                conditioning_set = (c for c in self.dag.predecessors(tuple(to_refine)) if c != pa)
+                if self._is_adj(pa, set(ch), conditioning_set):
+                    self.dag.add_edge(tuple(pa), ch)
+        self.dag.remove_node(tuple(to_refine))
+
+    def _is_adj(self, pa, ch, conditioning_set=None):
         if self.assume is None:
 
             def p_val(x, y):
@@ -250,7 +272,7 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
 
             def p_val(x, y):
                 try:
-                    cca = SimpleCanCorr(x, y)
+                    cca = SimpleCanCorr(x, y, conditioning_set)
                     result = cca.wilks_lambda_test()
                     return result.loc[0, "Pr > F"]
                 except (ValueError, np.linalg.LinAlgError):
