@@ -12,7 +12,9 @@ rule all:
         expand("results/er_ari_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),
         expand("results/er_fscore_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),
         # Figure 3:
-        # ...
+        "results/scalability_ari_samp.pdf",
+        "results/scalability_time_samp.pdf",
+        "results/scalability_time_nodes.pdf",
         # Table 1:
         # "results/causalchamber/dag_summary.txt",
         # "results/causalchamber/grid_metrics.csv",

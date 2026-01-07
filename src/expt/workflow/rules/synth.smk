@@ -70,3 +70,38 @@ rule plot:
         fscore="results/{graph}_fscore_ivn={num_intervs}.pdf",
     script:
         "../scripts/plot.py"
+
+
+rule collect_scalability:
+    input:
+        expand(
+            base_path + "metrics.csv",
+            graph=["er"],
+            num_nodes=[10, 20, 50, 100, 200],
+            seed=range(2),
+            density=[0.2],
+            num_intervs=[5],
+            samp_size=[
+                10,
+                100,
+                1000,
+                10000,
+                100000,
+            ],
+            allow_missing=True,
+        ),
+    output:
+        results="results/scalability.csv",
+    script:
+        "../scripts/collect.py"
+
+
+rule plot_scalability:
+    input:
+        rules.collect_scalability.output["results"],
+    output:
+        ari_samp="results/scalability_ari_samp.pdf",
+        time_samp="results/scalability_time_samp.pdf",
+        time_nodes="results/scalability_time_nodes.pdf",
+    script:
+        "../scripts/plot_scalability.py"
