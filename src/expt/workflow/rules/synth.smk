@@ -39,7 +39,7 @@ rule collect:
         expand(
             base_path + "metrics.csv",
             num_nodes=[10],
-            seed=range(2),
+            seed=range(10),
             density=[0.2, 0.5, 0.8],
             samp_size=[
                 10,
@@ -78,7 +78,7 @@ rule collect_scalability:
             base_path + "metrics.csv",
             graph=["er"],
             num_nodes=[10, 20, 50, 100, 200],
-            seed=range(2),
+            seed=range(10),
             density=[0.2],
             num_intervs=[5],
             samp_size=[
