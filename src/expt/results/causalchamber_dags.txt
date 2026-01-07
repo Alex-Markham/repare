@@ -1,0 +1,133 @@
+Target mode: default
+
+Grouped RePaRe (score-selected) hyperparameters:
+{
+  "alpha": 0.1,
+  "beta": 0.0001,
+  "ari": 0.6263656227239621,
+  "score": -1184649.6707603403,
+  "fit_time": 0.021733893001510296,
+  "num_parts": 4,
+  "num_edges": 2,
+  "precision": 1.0,
+  "recall": 0.5,
+  "f1": 0.6666666666666666
+}
+Partition nodes (score-selected):
+ Node 0: ['l_12', 'l_21', 'l_22', 'l_31', 'l_32']
+ Node 1: ['red', 'blue', 'current', 'ir_1', 'ir_2', 'vis_1', 'vis_2', 'l_11']
+ Node 2: ['pol_1', 'pol_2', 'angle_2']
+ Node 3: ['green', 'angle_1', 'ir_3', 'vis_3']
+Edges (u -> v):
+ 1 -> 3
+ 2 -> 3
+
+Grouped RePaRe (oracle-selected) hyperparameters:
+{
+  "alpha": 0.0001,
+  "beta": 0.0001,
+  "ari": 1.0,
+  "score": -1182984.5241716714,
+  "fit_time": 0.022045733996492345,
+  "num_parts": 4,
+  "num_edges": 2,
+  "precision": 1.0,
+  "recall": 0.5,
+  "f1": 0.6666666666666666
+}
+Partition nodes (oracle-selected):
+ Node 0: ['l_11', 'l_12', 'l_21', 'l_22', 'l_31', 'l_32']
+ Node 1: ['red', 'green', 'blue', 'current', 'ir_1', 'ir_2', 'vis_1', 'vis_2']
+ Node 2: ['pol_1', 'pol_2', 'angle_1', 'angle_2']
+ Node 3: ['vis_3', 'ir_3']
+Edges (u -> v):
+ 1 -> 3
+ 2 -> 3
+
+Ungrouped RePaRe (score-selected):
+{
+  "alpha": 0.01,
+  "beta": 0.0001,
+  "ari": 0.8161586840832123,
+  "score": -1186742.5466481505,
+  "fit_time": 0.09772580200660741,
+  "num_parts": 10,
+  "num_edges": 5,
+  "precision": 1.0,
+  "recall": 0.4166666666666667,
+  "f1": 0.5882352941176471
+}
+ Nodes:
+ Node 0: ['l_11', 'l_21', 'l_22', 'l_31', 'l_32']
+ Node 1: ['red', 'l_12']
+ Node 2: ['green']
+ Node 3: ['blue']
+ Node 4: ['current', 'ir_1', 'ir_2', 'vis_1', 'vis_2']
+ Node 5: ['pol_1']
+ Node 6: ['angle_1']
+ Node 7: ['pol_2']
+ Node 8: ['angle_2']
+ Node 9: ['vis_3', 'ir_3']
+ Edges (u -> v):
+ 1 -> 4
+ 2 -> 4
+ 3 -> 4
+ 5 -> 6
+ 7 -> 8
+
+Ungrouped RePaRe (oracle-selected):
+{
+  "alpha": 0.0001,
+  "beta": 0.01,
+  "ari": 1.0,
+  "score": -1164929.996435871,
+  "fit_time": 0.13239651099866023,
+  "num_parts": 8,
+  "num_edges": 8,
+  "precision": 1.0,
+  "recall": 0.8,
+  "f1": 0.888888888888889
+}
+ Nodes:
+ Node 0: ['l_11', 'l_12', 'l_21', 'l_22', 'l_31', 'l_32']
+ Node 1: ['red']
+ Node 2: ['green']
+ Node 3: ['blue']
+ Node 4: ['current', 'ir_1', 'ir_2', 'vis_1', 'vis_2']
+ Node 5: ['pol_1', 'angle_1']
+ Node 6: ['pol_2', 'angle_2']
+ Node 7: ['vis_3', 'ir_3']
+ Edges (u -> v):
+ 1 -> 4
+ 1 -> 7
+ 2 -> 4
+ 2 -> 7
+ 3 -> 4
+ 3 -> 7
+ 5 -> 7
+ 6 -> 7
+
+GIES:
+ Score: -1148242.1912
+ Precision/Recall/F1: 0.6316 / 0.6154 / 0.6234
+ Runtime (s): 7.78
+
+GnIES:
+ Score: -540269.8670
+ Estimated targets: [0, 2, 4, 5, 6, 7, 8, 9, 11]
+ Skeleton precision/recall/F1: 0.4255 / 0.5128 / 0.4651
+ Runtime (s): 535.68
+
+UT-IGSP (score-selected):
+{
+  "alpha_ci": 0.001,
+  "alpha_inv": 0.0001,
+  "bic": 1908878.5063125752
+}
+
+UT-IGSP (oracle-selected):
+{
+  "alpha_ci": 0.0001,
+  "alpha_inv": 0.01,
+  "bic": 1908916.0048502344
+}

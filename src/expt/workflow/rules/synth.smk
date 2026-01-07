@@ -104,4 +104,4 @@ rule plot_scalability:
         time_samp="results/scalability_time_samp.pdf",
         time_nodes="results/scalability_time_nodes.pdf",
     script:
-        "../scripts/plot_scalability.py"
+        "../scripts/scalability_plot.py"

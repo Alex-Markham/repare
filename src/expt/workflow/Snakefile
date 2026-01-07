@@ -1,27 +1,27 @@
-from snakemake.io import directory
-
-
 include: "rules/synth.smk"
 include: "rules/causalchamber.smk"
 
 
+fig_2 = expand(
+    "results/er_{metric}_ivn={num_intervs}.pdf",
+    metric=["ari", "fscore"],
+    num_intervs=[2, 5, 8],
+)
+fig_3 = expand(
+    "results/scalability_{compare}.pdf", compare=["ari_samp", "time_samp", "time_nodes"]
+)
+tab_1 = "results/causalchamber_summary.csv"
+fig_4 = "results/causalchamber_dags.txt"
+fig_5 = expand(
+    "results/sf_{metric}_ivn={num_intervs}.pdf",
+    metric=["ari", "fscore"],
+    num_intervs=[2, 5, 8],
+)
+
+
 rule all:
     input:
-        # Figure 2:
-        expand("results/er_ari_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),
-        expand("results/er_fscore_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),
-        # Figure 3:
-        "results/scalability_ari_samp.pdf",
-        "results/scalability_time_samp.pdf",
-        "results/scalability_time_nodes.pdf",
-        # Table 1:
-        # "results/causalchamber/dag_summary.txt",
-        # "results/causalchamber/grid_metrics.csv",
-        # "results/causalchamber/method_metrics.csv",
-        # "results/causalchamber/ut_grid_metrics.csv",
-        # "results/causalchamber/grid_runs",
-        # # Figure 4:
-        # "results/causalchamber/dag.png",
-        # Figure 5:
-        expand("results/sf_ari_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),
-        expand("results/sf_fscore_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),
+        fig_2,
+        tab_1,
+        fig_4,
+        fig_5,
