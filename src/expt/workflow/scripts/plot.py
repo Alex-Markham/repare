@@ -1,6 +1,15 @@
+import itertools
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+
+# pick a palette with good categorical separation
+sns.set_palette("colorblind")  # or "colorblind", "Dark2", etc.
+
+# global cycler for markers & linestyles if you want matplotlib to help
+markers = itertools.cycle(["o", "s", "D", "^", "v"])
+linestyles = itertools.cycle(["-", "--", ":", "-."])
 
 sns.set_context("paper", font_scale=2.3)
 
@@ -14,6 +23,8 @@ ariplot = sns.lineplot(
     y="ari",
     marker="o",
     hue="density",
+    style="density",
+    markers=True,
     estimator="median",
     errorbar="ci",
 )
@@ -33,6 +44,8 @@ fplot = sns.lineplot(
     y="fscore",
     marker="o",
     hue="density",
+    style="density",
+    markers=True,
     estimator="median",
     errorbar="ci",
 )
