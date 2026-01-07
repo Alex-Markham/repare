@@ -2,26 +2,25 @@ from snakemake.io import directory
 
 
 include: "rules/synth.smk"
-include: "rules/synth_scale_free.smk"
 include: "rules/causalchamber.smk"
 include: "rules/scalability.smk"
 
 
 rule all:
     input:
-        expand("results/fscores_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
-        expand("results/ari_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
-        expand(
-            "results/scale_free/fscores_num_intervs_{num_intervs}.pdf",
-            num_intervs=[2, 5, 8],
-        ),
-        expand(
-            "results/scale_free/ari_num_intervs_{num_intervs}.pdf",
-            num_intervs=[2, 5, 8],
-        ),
-        "results/causalchamber/dag.png",
-        "results/causalchamber/dag_summary.txt",
-        "results/causalchamber/grid_metrics.csv",
-        "results/causalchamber/method_metrics.csv",
-        "results/causalchamber/ut_grid_metrics.csv",
-        "results/causalchamber/grid_runs",
+        # Figure 2:
+        expand("results/er_ari_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),
+        expand("results/er_fscore_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),
+        # Figure 3:
+        # ...
+        # Table 1:
+        # "results/causalchamber/dag_summary.txt",
+        # "results/causalchamber/grid_metrics.csv",
+        # "results/causalchamber/method_metrics.csv",
+        # "results/causalchamber/ut_grid_metrics.csv",
+        # "results/causalchamber/grid_runs",
+        # # Figure 4:
+        # "results/causalchamber/dag.png",
+        # Figure 5:
+        expand("results/sf_ari_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),
+        expand("results/sf_fscore_ivn={num_intervs}.pdf", num_intervs=[2, 5, 8]),

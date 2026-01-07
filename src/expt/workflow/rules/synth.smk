@@ -1,47 +1,45 @@
-synth_base_path = "results/synth/num_intervs={num_intervs}/density={density}/samp_size={samp_size}/seed={seed}/"
+base_path = "results/synth/graph={graph}/num_nodes={num_nodes}/num_intervs={num_intervs}/density={density}/samp_size={samp_size}/seed={seed}/"
 
 
-rule data_generation_synth:
+rule generate:
     output:
-        synth_base_path + "dataset.npz",
+        base_path + "dataset.npz",
     params:
-        num_nodes=10,
-        num_intervs=lambda wildcards: wildcards.num_intervs,
         intervention_type="soft",
     script:
-        "../scripts/gen_synth.py"
+        "../scripts/generate.py"
 
 
-rule model_fitting_synth:
+rule fit:
     input:
-        data=synth_base_path + "dataset.npz",
+        data=base_path + "dataset.npz",
     output:
-        synth_base_path + "model.pkl",
+        base_path + "model.pkl",
     params:
         alpha=0.0001,
         beta=0.0001,
         assume="gaussian",
         refine_test="ttest",
     script:
-        "../scripts/fit_synth.py"
+        "../scripts/fit.py"
 
 
-rule evaluation_synth:
+rule evaluate:
     input:
-        data=synth_base_path + "dataset.npz",
-        model=synth_base_path + "model.pkl",
+        data=base_path + "dataset.npz",
+        model=base_path + "model.pkl",
     output:
-        synth_base_path + "metrics.csv",
+        base_path + "metrics.csv",
     script:
-        "../scripts/eval_synth.py"
+        "../scripts/evaluate.py"
 
 
-rule aggregation_synth:
+rule collect:
     input:
-        lambda wildcards, bp=synth_base_path: expand(
-            bp + "metrics.csv",
-            num_intervs=[wildcards.num_intervs],
-            seed=range(10),
+        expand(
+            base_path + "metrics.csv",
+            num_nodes=[10],
+            seed=range(2),
             density=[0.2, 0.5, 0.8],
             samp_size=[
                 10,
@@ -56,24 +54,19 @@ rule aggregation_synth:
                 50000,
                 100000,
             ],
+            allow_missing=True,
         ),
     output:
-        "results/synth/results_num_intervs_{num_intervs}.csv",
+        results="results/{graph}_results_ivn={num_intervs}.csv",
     script:
-        "../scripts/aggregate.py"
+        "../scripts/collect.py"
 
 
-rule plot_synth:
+rule plot:
     input:
-        "results/synth/results_num_intervs_{num_intervs}.csv",
+        rules.collect.output["results"],
     output:
-        "results/fscores_num_intervs_{num_intervs}.pdf",
-        "results/ari_num_intervs_{num_intervs}.pdf",
+        ari="results/{graph}_ari_ivn={num_intervs}.pdf",
+        fscore="results/{graph}_fscore_ivn={num_intervs}.pdf",
     script:
-        "../scripts/plot_synth.py"
-
-
-rule synth_all:
-    input:
-        expand("results/fscores_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
-        expand("results/ari_num_intervs_{num_intervs}.pdf", num_intervs=[2, 5, 8]),
+        "../scripts/plot.py"

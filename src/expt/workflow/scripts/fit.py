@@ -4,6 +4,7 @@ import time
 import numpy as np
 from repare.repare import PartitionDagModelIvn
 
+# load params and input
 alpha = float(snakemake.params.alpha)
 beta = float(snakemake.params.beta)
 assume_param = snakemake.params.assume
@@ -25,6 +26,7 @@ def _map_type(value: str) -> str:
 intervention_type = _map_type(intervention_param)
 data = np.load(snakemake.input.data, allow_pickle=True)
 
+# fit
 targets = data["targets"]
 data_dict = {"obs": (data["obs"], set(), "obs")}
 for idx, target in enumerate(targets):
@@ -35,5 +37,6 @@ start = time.perf_counter()
 model.fit(data_dict, alpha, beta, assume, refine_test=refine_test)
 model.fit_runtime_sec = time.perf_counter() - start
 
+# save output
 with open(snakemake.output[0], "wb") as f:
     pickle.dump(model, f)
