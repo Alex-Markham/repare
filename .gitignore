@@ -1,6 +1,7 @@
 # Devenv
 .devenv*
 devenv.local.nix
+.envrc
 
 # direnv
 .direnv
@@ -14,4 +15,3 @@ devenv.local.nix
 # snakemake experiments
 /src/expt/.snakemake/
 /src/expt/results/
-/.envrc
