@@ -156,7 +156,7 @@ def run_repare_grid(
             edge_stats = partition_edge_metrics(model.dag, true_graph)
 
             expanded_adj = model.expand_coarsened_dag(fully_connected=True)
-            score_value = float(gnies_score_class.full_score(expanded_adj))
+            score_value = -float(gnies_score_class.full_score(expanded_adj))
 
             records.append(
                 {
