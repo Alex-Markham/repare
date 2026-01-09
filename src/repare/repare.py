@@ -371,7 +371,7 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
 
         return adjacency
 
-    def chain_gaussian_score(self, datasets):
+    def chain_gaussian_score(self, datasets, fully_connected=True):
         """Negative log-likelihood under the Gaussian AMP chain-graph model.
 
         Parameters
@@ -379,6 +379,9 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
         datasets : iterable of array-like
             Each element is (n_samples, num_features). All datasets must share the
             same feature dimension/order used during fitting.
+        fully_connected : bool, default=True
+            When True, models intra-block dependencies (dense residual covariance).
+            When False, assumes intra-block conditional independence (diagonal residual covariance).
 
         Returns
         -------
@@ -423,6 +426,9 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                     )
                 else:
                     residual = Scc.copy()
+
+                if not fully_connected:
+                    residual = np.diag(np.diag(residual))
 
                 residual = 0.5 * (residual + residual.T)
                 omega = np.linalg.pinv(residual)

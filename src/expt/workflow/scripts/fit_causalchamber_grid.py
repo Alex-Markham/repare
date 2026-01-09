@@ -298,6 +298,7 @@ def run_repare_grid(
     grid_root=None,
     feature_cols=None,
     score_mode="gnies",
+    intra_part_connectivity=True,
 ):
     records = []
     models = {}
@@ -335,10 +336,11 @@ def run_repare_grid(
             ari = adjusted_rand_score(true_labels, est_labels)
             edge_stats = partition_edge_metrics(model.dag, true_graph)
             if score_mode == "gnies":
-                expanded_adj = model.expand_coarsened_dag(fully_connected=True)
-                score_value = float(gnies_score_class.full_score(expanded_adj))
+                expanded_adj = model.expand_coarsened_dag(fully_connected=intra_part_connectivity)
+                # GnIES score is log-likelihood (higher is better), but we minimize score.
+                score_value = -float(gnies_score_class.full_score(expanded_adj))
             else:
-                score_value = float(model.chain_gaussian_score(chain_datasets))
+                score_value = float(model.chain_gaussian_score(chain_datasets, fully_connected=intra_part_connectivity))
             model.score = score_value
             row = dict(
                 alpha=float(alpha),
@@ -503,6 +505,7 @@ def main():
     target_mode = getattr(snakemake.params, "target_mode", "default")
     include_grouped = getattr(snakemake.params, "include_grouped", True)
     score_mode = getattr(snakemake.params, "score_mode", "gnies").lower()
+    intra_part_connectivity = getattr(snakemake.params, "intra_part_connectivity", True)
     single_target_map = TARGET_MODE_MAP.get(target_mode, DEFAULT_SINGLE_TARGET_EXPERIMENTS)
     grid_dir = getattr(snakemake.output, "grid_dir", None)
     grid_root = ensure_clean_dir(Path(grid_dir)) if grid_dir else None
@@ -534,6 +537,7 @@ def main():
             grid_root=grid_root,
             feature_cols=feature_cols,
             score_mode=score_mode,
+            intra_part_connectivity=intra_part_connectivity,
         )
         save_dag_plot(score_model, feature_cols, snakemake.output.dag)
         score_parts, score_edges = labeled_summary(score_model, feature_cols)
@@ -582,6 +586,7 @@ def main():
         grid_root=None,
         feature_cols=feature_cols,
         score_mode=score_mode,
+        intra_part_connectivity=intra_part_connectivity,
     )
     untranslated = [
         ("score", ungrouped_score_model, ungrouped_score_params),
@@ -682,6 +687,7 @@ def main():
 
     summary_lines = []
     summary_lines.append(f"Target mode: {target_mode}")
+    summary_lines.append(f"Intra-part connectivity: {intra_part_connectivity}")
     summary_lines.append("")
     if include_grouped:
         summary_lines.append("Grouped RePaRe (score-selected) hyperparameters:")
