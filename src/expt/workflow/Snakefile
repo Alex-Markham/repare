@@ -8,7 +8,8 @@ fig_2 = expand(
     num_intervs=[2, 5, 8],
 )
 fig_3 = expand(
-    "results/scalability_{compare}.pdf", compare=["ari_samp", "time_samp", "time_nodes"]
+    "results/scalability_{compare}.pdf",
+    compare=["ari_samp", "time_samp", "time_nodes"],
 )
 tab_1 = "results/causalchamber_summary.csv"
 fig_4 = "results/causalchamber_dags.txt"
@@ -22,6 +23,7 @@ fig_5 = expand(
 rule all:
     input:
         fig_2,
+        fig_3,
         tab_1,
         fig_4,
         fig_5,
