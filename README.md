@@ -1,7 +1,7 @@
 # RePaRe #
 
-This repo provides an implementation of the recursive partition refinement (RePaRe) algorithm and experimental results, suitable for double-blind submission.
-Included license files retain third‑party names only to comply with upstream license terms and do not violate anonymity for review.
+This repo provides an implementation of the recursive partition refinement (RePaRe) algorithm and experimental results from the preprint *Coarsening Causal DAG Models* ([arXiv:2601.10531](https://arxiv.org/abs/2601.10531) [stat.ML]).
+
 
 The interventional coarsening implementation is provided by the `PartitionDagModelIvn` class in [`src/repare/repare.py`](src/repare/repare.py).
 

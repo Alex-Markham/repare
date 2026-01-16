@@ -4,6 +4,28 @@ version = "0.1.0"
 description = "Recursive partition refinement for causal discovery."
 readme = "README.md"
 requires-python = ">=3.13"
+license = {text = "GPL-3.0-or-later"}
+authors = [
+    {name = "Alex Markham", email = "alex.markham@causal.dev"},
+    {name = "Francisco Madaleno", email = "fmfsa@dtu.dk"},
+]
+maintainers = [
+    {name = "Alex Markham", email = "alex.markham@causal.dev"},
+    {name = "Francisco Madaleno", email = "fmfsa@dtu.dk"},
+]
+keywords = ["causal-discovery", "interventional-data", "partition-refinement", "dag"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
 dependencies = [
     "dcor>=0.6",
     "networkx>=3.4.2",
@@ -11,6 +33,10 @@ dependencies = [
     "scipy>=1.15.1",
     "causalchamber>=0.2.1",
 ]
+
+[project.urls]
+Repository = "https://github.com/Alex-Markham/repare"
+Issues = "https://github.com/Alex-Markham/repare/issues"
 
 [build-system]
 requires = ["hatchling"]
