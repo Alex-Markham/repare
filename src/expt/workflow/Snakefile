@@ -15,7 +15,7 @@ tab_1 = "results/causalchamber_summary.csv"
 fig_4 = "results/causalchamber_dags.txt"
 fig_5 = expand(
     "results/sf_{metric}_ivn={num_intervs}.pdf",
-    metric=["ari", "fscore"],
+    metric=["ari", "fscore"],  
     num_intervs=[2, 5, 8],
 )
 
