@@ -6,7 +6,7 @@ Grouped RePaRe (score-selected) hyperparameters:
   "beta": 0.0001,
   "ari": 0.9317038102084831,
   "score": 1182930.6738037649,
-  "fit_time": 0.021017152001149952,
+  "fit_time": 0.06396549299824983,
   "num_parts": 4,
   "num_edges": 2,
   "precision": 1.0,
@@ -28,7 +28,7 @@ Grouped RePaRe (oracle-selected) hyperparameters:
   "beta": 0.0001,
   "ari": 1.0,
   "score": 1182984.5241716714,
-  "fit_time": 0.02188372702221386,
+  "fit_time": 0.1409158939786721,
   "num_parts": 4,
   "num_edges": 2,
   "precision": 1.0,
@@ -50,7 +50,7 @@ Ungrouped RePaRe (score-selected):
   "beta": 0.01,
   "ari": 1.0,
   "score": 1164929.996435871,
-  "fit_time": 0.12711602399940602,
+  "fit_time": 0.7532363419886678,
   "num_parts": 8,
   "num_edges": 8,
   "precision": 1.0,
@@ -82,7 +82,7 @@ Ungrouped RePaRe (oracle-selected):
   "beta": 0.01,
   "ari": 1.0,
   "score": 1164929.996435871,
-  "fit_time": 0.12711602399940602,
+  "fit_time": 0.7532363419886678,
   "num_parts": 8,
   "num_edges": 8,
   "precision": 1.0,
@@ -111,24 +111,24 @@ Ungrouped RePaRe (oracle-selected):
 GIES:
  Score: -1148242.1912
  Precision/Recall/F1: 0.6316 / 0.6154 / 0.6234
- Runtime (s): 7.78
+ Runtime (s): 7.23
 
 GnIES:
  Score: -540269.8670
  Estimated targets: [0, 2, 4, 5, 6, 7, 8, 9, 11]
  Skeleton precision/recall/F1: 0.4255 / 0.5128 / 0.4651
- Runtime (s): 535.68
+ Runtime (s): 1966.92
 
 UT-IGSP (score-selected):
 {
   "alpha_ci": 0.001,
-  "alpha_inv": 0.0001,
-  "bic": 1908878.5063125752
+  "alpha_inv": 0.001,
+  "bic": 1908872.580871221
 }
 
 UT-IGSP (oracle-selected):
 {
   "alpha_ci": 0.0001,
-  "alpha_inv": 0.01,
-  "bic": 1908916.0048502344
+  "alpha_inv": 0.1,
+  "bic": 1908905.1949151892
 }

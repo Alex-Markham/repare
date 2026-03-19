@@ -240,7 +240,7 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
             self.refinable.append(v)
         return to_refine, u, v
 
-    def _recurse(self,):
+    def _recurse(self):
         to_refine, u, v = self._refine()
         if not u or not v:
             return
@@ -255,9 +255,12 @@ class PartitionDagModelIvn(PartitionDagModelOracle):
                     conditioning_set = itertools.chain(conditioning_set, (u,))
                 if self._is_adj(set(pa), ch, conditioning_set):
                     self.dag.add_edge(pa, tuple(ch))
-        for pa in (u, v):
-            for ch in self.dag.successors(tuple(to_refine)):
-                conditioning_set = (c for c in self.dag.predecessors(tuple(to_refine)) if c != pa)
+        for ch in self.dag.successors(tuple(to_refine)):
+            for pa in (u, v): 
+                base_parents = self.dag.predecessors(ch)
+                conditioning_set = (c for c in base_parents if c != tuple(to_refine))
+                sibling = v if pa == u else u
+                conditioning_set = itertools.chain(conditioning_set, (sibling,))
                 if self._is_adj(pa, set(ch), conditioning_set):
                     self.dag.add_edge(tuple(pa), ch)
         self.dag.remove_node(tuple(to_refine))
