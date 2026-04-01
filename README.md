@@ -2,7 +2,6 @@
 
 This repo provides an implementation of the recursive partition refinement (RePaRe) algorithm and experimental results from the preprint *Coarsening Causal DAG Models* ([arXiv:2601.10531](https://arxiv.org/abs/2601.10531) [stat.ML]).
 
-
 The interventional coarsening implementation is provided by the `PartitionDagModelIvn` class in [`src/repare/repare.py`](src/repare/repare.py).
 
 Experiments are organized into a Snakemake workflow, with the [`src/expt/workflow/Snakefile`](src/expt/workflow/Snakefile) entry point.
@@ -19,3 +18,23 @@ The first time `uv run <...>` is called, it will download and install all depend
 Decrease the number of cores (e.g., `10` instead of `all`) as needed.
 All snakemake outputs are saved in `src/expt/results/`.
 
+# Citing #
+
+If you find the code helpful, please cite it using the following bibtex:
+```
+@InProceedings{markham2026,
+  title = 	     {Coarsening Causal {DAG} Models},
+  author =       {Francisco Madaleno and Pratik Misra and Alex Markham},
+  booktitle = 	 {Proceedings of the Fifth Conference on Causal Learning and Reasoning},
+  year = 	     {2026},
+  editor = 	     {Bijan Mazaheri and Niels Richard Hansen},
+  series = 	     {Proceedings of Machine Learning Research},
+  month = 	     {Apr},
+  publisher =    {PMLR},
+}
+
+```
+
+# Contact #
+
+Feel free to [raise an issue](https://github.com/Alex-Markham/repare/issues/new/choose) or [email me](mailto:alex.markham@causal.dev) with any questions about reproducing the experimental results, modifying the code to your problem, or applying RePaRe to your data!
