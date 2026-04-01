@@ -22,7 +22,7 @@ All snakemake outputs are saved in `src/expt/results/`.
 
 If you find the code helpful, please cite it using the following bibtex:
 ```
-@InProceedings{markham2026,
+@InProceedings{madaleno2026,
   title = 	     {Coarsening Causal {DAG} Models},
   author =       {Francisco Madaleno and Pratik Misra and Alex Markham},
   booktitle = 	 {Proceedings of the Fifth Conference on Causal Learning and Reasoning},
