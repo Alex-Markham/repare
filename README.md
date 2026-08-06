@@ -1,6 +1,6 @@
 # RePaRe #
 
-This repo provides an implementation of the recursive partition refinement (RePaRe) algorithm and experimental results from the preprint *Coarsening Causal DAG Models* ([arXiv:2601.10531](https://arxiv.org/abs/2601.10531) [stat.ML]).
+This repo provides an implementation of the recursive partition refinement (RePaRe) algorithm and experimental results from the preprint *Coarsening Causal DAG Models* published at [CLeaR'26](https://proceedings.mlr.press/v323/madaleno26b.html).
 
 The interventional coarsening implementation is provided by the `PartitionDagModelIvn` class in [`src/repare/repare.py`](src/repare/repare.py).
 
@@ -22,15 +22,18 @@ All snakemake outputs are saved in `src/expt/results/`.
 
 If you find the code helpful, please cite it using the following bibtex:
 ```
-@InProceedings{madaleno2026,
-  title = 	     {Coarsening Causal {DAG} Models},
+@InProceedings{pmlr-v323-madaleno26b,
+  title =        {Coarsening Causal {DAG} Models},
   author =       {Francisco Madaleno and Pratik Misra and Alex Markham},
-  booktitle = 	 {Proceedings of the Fifth Conference on Causal Learning and Reasoning},
-  year = 	     {2026},
-  editor = 	     {Bijan Mazaheri and Niels Richard Hansen},
+  booktitle =    {Proceedings of the Fifth Conference on Causal Learning and Reasoning},
+  pages =        {1318--1344},
+  year =         {2026},
+  editor =       {Mazaheri, Bijan and Hanson, Niels Richard},
+  volume =       {323},
   series = 	     {Proceedings of Machine Learning Research},
-  month = 	     {Apr},
+  month =        {06--08 Apr},
   publisher =    {PMLR},
+  url =          {https://proceedings.mlr.press/v323/madaleno26b.html}
 }
 
 ```
